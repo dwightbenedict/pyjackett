@@ -8,20 +8,13 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Iterable
-from pathlib import Path
 
-from pyjackett.config.server_config import ServerConfig
-from pyjackett.core.query import TorznabQuery
 from pyjackett.indexers.base import BaseIndexer
 from pyjackett.indexers.configuration import IndexerConfigurationService
 from pyjackett.indexers.dependencies import IndexerDependencies
 from pyjackett.indexers.meta.factory import MetaIndexerFactory
 from pyjackett.indexers.registry import IndexerRegistry
-from pyjackett.indexers.sources import (
-    CardigannSource,
-    IndexerSource,
-    NativeSource,
-)
+from pyjackett.indexers.sources import IndexerSource
 
 logger = logging.getLogger(__name__)
 
@@ -37,19 +30,15 @@ class IndexerManager:
         self,
         dependencies: IndexerDependencies,
         config_service: IndexerConfigurationService,
-        server_config: ServerConfig,
-        definition_dirs: list[Path],
-        sources: Iterable[IndexerSource] | None = None,
+        sources: Iterable[IndexerSource],
+        registry: IndexerRegistry,
+        meta_factory: MetaIndexerFactory,
     ) -> None:
         self._deps = dependencies
         self._config_service = config_service
-        self._sources = list(
-            sources or [NativeSource(), CardigannSource(definition_dirs)]
-        )
-        self._registry = IndexerRegistry()
-        self._meta = MetaIndexerFactory(
-            dependencies, server_config, self._registry.values()
-        )
+        self._sources = list(sources)
+        self._registry = registry
+        self._meta = meta_factory
 
     # ---- startup ----------------------------------------------------------
 
@@ -110,22 +99,7 @@ class IndexerManager:
 
     async def test_indexer(self, name: str) -> None:
         """Run a blank search; fails when the tracker returns nothing."""
-        indexer = self.get_indexer(name)
-        query = TorznabQuery(query_type="search", search_term="", is_test=True)
-        result = await indexer.results_for_query(query)
-        logger.info(
-            "Test search in %s => Found %d releases [%dms]",
-            indexer.name,
-            len(result.releases),
-            result.elapsed_ms,
-        )
-        if not result.releases:
-            raise RuntimeError(
-                f"Test search in {indexer.name} => Found no results while "
-                "trying to browse this tracker. This may be an issue with "
-                "the indexer, or other indexer settings such as search "
-                "freeleech only etc."
-            )
+        await self.get_indexer(name).verify()
 
     def delete_indexer(self, name: str) -> None:
         indexer = self.get_indexer(name)

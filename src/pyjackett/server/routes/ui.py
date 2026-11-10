@@ -9,17 +9,12 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 
 from pyjackett.app_context import AppContext
 from pyjackett.config.paths import BUNDLED_WEB_DIR
-from pyjackett.server.auth import (
-    COOKIE_NAME,
-    SESSION_DAYS,
-    create_session_cookie,
-    is_authenticated,
-)
-from pyjackett.server.deps import get_context as _context
+from pyjackett.server.auth import COOKIE_NAME, is_authenticated
+from pyjackett.server.deps import Context
+from pyjackett.services.security import SECONDS_PER_DAY, SESSION_DAYS
 
 router = APIRouter()
 BASE_PATH_PLACEHOLDER = "__BASE_PATH__"
-_SECONDS_PER_DAY = 86400
 
 
 def _page(name: str, base_path: str) -> HTMLResponse:
@@ -39,8 +34,8 @@ def _redirect(context: AppContext, path: str) -> RedirectResponse:
 def _with_session(context: AppContext, response: RedirectResponse):
     response.set_cookie(
         COOKIE_NAME,
-        create_session_cookie(context),
-        max_age=SESSION_DAYS * _SECONDS_PER_DAY,
+        context.security.create_session_cookie(),
+        max_age=SESSION_DAYS * SECONDS_PER_DAY,
         httponly=True,
         samesite="lax",
     )
@@ -54,22 +49,20 @@ async def health():
 
 
 @router.get("/")
-async def root(request: Request):
-    return _redirect(_context(request), "/UI/Dashboard")
+async def root(context: Context):
+    return _redirect(context, "/UI/Dashboard")
 
 
 @router.get("/UI/Login")
-async def login_page(request: Request):
-    context = _context(request)
-    if is_authenticated(context, request):
+async def login_page(request: Request, context: Context):
+    if is_authenticated(context.security, request):
         return _with_session(context, _redirect(context, "/UI/Dashboard"))
     return _page("login.html", context.server_service.base_path())
 
 
 @router.post("/UI/Login")
 @router.post("/UI/Dashboard")
-async def login(request: Request):
-    context = _context(request)
+async def login(request: Request, context: Context):
     form = parse_qs((await request.body()).decode("utf-8"))
     password = (form.get("password") or [""])[0]
     if context.security.check_authorised(password):
@@ -78,17 +71,16 @@ async def login(request: Request):
 
 
 @router.get("/UI/Dashboard")
-async def dashboard(request: Request):
-    context = _context(request)
+async def dashboard(request: Request, context: Context):
     if request.query_params.get("logout", "").lower() == "true":
         return _redirect(context, "/UI/Logout")
-    if not is_authenticated(context, request):
+    if not is_authenticated(context.security, request):
         return _redirect(context, "/UI/Login")
     return _page("index.html", context.server_service.base_path())
 
 
 @router.get("/UI/Logout")
-async def logout(request: Request):
-    response = _redirect(_context(request), "/UI/Login")
+async def logout(context: Context):
+    response = _redirect(context, "/UI/Login")
     response.delete_cookie(COOKIE_NAME)
     return response

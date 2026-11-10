@@ -32,10 +32,12 @@ logger = logging.getLogger(__name__)
 def _lifespan(context: AppContext, load_indexers: bool):
     @asynccontextmanager
     async def lifespan(app: FastAPI):
+        context.log_cache.attach()
         if load_indexers:
             await asyncio.to_thread(context.indexers.init_indexers)
         yield
         await context.close()
+        context.log_cache.detach()
 
     return lifespan
 

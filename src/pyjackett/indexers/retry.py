@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-import asyncio
 import logging
-import random
 from collections.abc import Awaitable, Callable
 
 from pyjackett.core.exceptions import (
@@ -12,6 +10,7 @@ from pyjackett.core.exceptions import (
     TooManyRequestsError,
 )
 from pyjackett.http.models import WebResult
+from pyjackett.utils.clock import SYSTEM_CLOCK, Clock
 
 logger = logging.getLogger(__name__)
 
@@ -27,16 +26,17 @@ def _should_retry(result: WebResult) -> bool:
     )
 
 
-def _backoff_seconds(attempt: int) -> float:
+def _backoff_seconds(attempt: int, clock: Clock) -> float:
     """Exponential delay with jitter: ~2s, ~4s, ~8s ..."""
     delay = BASE_DELAY_SECONDS * 2**attempt
-    return delay * random.uniform(0.75, 1.25)
+    return delay * clock.jitter(0.75, 1.25)
 
 
 async def retry_request(
     operation: Callable[[], Awaitable[WebResult]],
     retries: int,
     name: str,
+    clock: Clock = SYSTEM_CLOCK,
 ) -> WebResult:
     """Call ``operation`` until it succeeds or ``retries`` are used up.
 
@@ -57,12 +57,12 @@ async def retry_request(
             if last_attempt or not _should_retry(result):
                 return result
             reason = f"status {result.status}"
-        delay = _backoff_seconds(attempt)
+        delay = _backoff_seconds(attempt, clock)
         logger.warning(
             "Request to %s failed with %s. Retrying in %.1fs.",
             name,
             reason,
             delay,
         )
-        await asyncio.sleep(delay)
+        await clock.sleep(delay)
     raise AssertionError("unreachable")

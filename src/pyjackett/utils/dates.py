@@ -95,9 +95,13 @@ def from_time_ago(text: str, relative_from: datetime | None = None):
     return now - total
 
 
-def from_fuzzy_time(text: str, date_format: str | None = None) -> datetime:
+def from_fuzzy_time(
+    text: str, date_format: str | None = None, now: datetime | None = None
+) -> datetime:
     """Parse an arbitrary date/time string; missing parts default to today."""
-    today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    today = (now or local_now()).replace(
+        hour=0, minute=0, second=0, microsecond=0, tzinfo=None
+    )
     try:
         parsed = dateutil_parser.parse(
             text, fuzzy=True, dayfirst=date_format == "UK", default=today
@@ -110,7 +114,7 @@ def from_fuzzy_time(text: str, date_format: str | None = None) -> datetime:
 def _from_fuzzy_past_time(
     text: str, date_format: str | None, now: datetime
 ) -> datetime:
-    result = from_fuzzy_time(text, date_format)
+    result = from_fuzzy_time(text, date_format, now)
     return result.replace(year=result.year - 1) if result > now else result
 
 
@@ -199,7 +203,7 @@ def from_unknown(
     now = relative_from or local_now()
     try:
         special = _parse_special_cases(text, date_format, now)
-        return special or from_fuzzy_time(text, date_format)
+        return special or from_fuzzy_time(text, date_format, now)
     except Exception as error:
         raise ValueError(
             f'DateTime parsing failed for "{text}": {error}'

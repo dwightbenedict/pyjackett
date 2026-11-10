@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import base64
 import hashlib
-import os
 from pathlib import Path
 
 from cryptography.fernet import Fernet, InvalidToken
@@ -21,9 +20,10 @@ class ProtectionService:
         self._fernet = Fernet(key)
 
     @classmethod
-    def for_data_dir(cls, data_dir: Path) -> ProtectionService:
-        """Use ``PYJACKETT_KEY`` if set, otherwise a generated key file."""
-        passphrase = os.environ.get(KEY_ENV)
+    def for_data_dir(
+        cls, data_dir: Path, passphrase: str | None = None
+    ) -> ProtectionService:
+        """Use ``passphrase`` if given, otherwise a generated key file."""
         if passphrase:
             return cls(_key_from_passphrase(passphrase))
         return cls(_load_or_create_key_file(data_dir / PROTECTION_KEY_FILE))

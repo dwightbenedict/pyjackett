@@ -40,3 +40,7 @@ class ConfigurationError(Exception):
     def __init__(self, message: str, config_data: Any = None) -> None:
         super().__init__(message)
         self.config_data = config_data
+
+
+class IndexerTestFailedError(RuntimeError):
+    """A test search found nothing: the indexer is probably misconfigured."""

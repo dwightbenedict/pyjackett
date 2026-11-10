@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-import time
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from enum import StrEnum
@@ -14,6 +13,7 @@ from pyjackett.core.capabilities import TorznabCapabilities
 from pyjackett.core.exceptions import (
     IndexerError,
     IndexerRateLimitedError,
+    IndexerTestFailedError,
     TooManyRequestsError,
 )
 from pyjackett.core.query import TorznabQuery
@@ -30,6 +30,7 @@ from pyjackett.indexers.result_processing import (
     filter_results,
     fix_results,
 )
+from pyjackett.utils.clock import SYSTEM_CLOCK, Clock, Stopwatch
 from pyjackett.utils.text import is_blank
 
 logger = logging.getLogger(__name__)
@@ -56,6 +57,7 @@ class BaseIndexer(ABC):
     alternative_site_links: tuple[str, ...] = ()
     legacy_site_links: tuple[str, ...] = ()
     supports_pagination: bool = False
+    caches_results: bool = True  # meta indexers leave this to their members
 
     def __init__(
         self,
@@ -63,9 +65,12 @@ class BaseIndexer(ABC):
         config_data: ConfigurationData | None = None,
     ) -> None:
         self._deps = dependencies
+        self._clock: Clock = (
+            dependencies.clock if dependencies is not None else SYSTEM_CLOCK
+        )
         self.config_data = config_data or ConfigurationData()
         self._torznab_caps = TorznabCapabilities()
-        self.health = IndexerHealth()
+        self.health = IndexerHealth(self._clock.monotonic)
         self.site_link = self.default_site_link
         self.tags: list[str] = []
         self._is_configured = False
@@ -222,19 +227,40 @@ class BaseIndexer(ABC):
             self.health.record_failure()
             raise IndexerError(self, error) from error
 
+    async def verify(self) -> None:
+        """Run a blank search; fails when the tracker returns nothing."""
+        query = TorznabQuery(query_type="search", search_term="", is_test=True)
+        result = await self.results_for_query(query)
+        logger.info(
+            "Test search in %s => Found %d releases [%dms]",
+            self.name,
+            len(result.releases),
+            result.elapsed_ms,
+        )
+        if not result.releases:
+            raise IndexerTestFailedError(
+                f"Test search in {self.name} => Found no results while "
+                "trying to browse this tracker. This may be an issue with "
+                "the indexer, or other indexer settings such as search "
+                "freeleech only etc."
+            )
+
     # ---- steps subclasses may specialise ------------------------------------
 
     def _accepts(self, query: TorznabQuery, is_meta_indexer: bool) -> bool:
         if not self.can_handle_query(query):
             return False
         if not can_handle_categories(
-            self.torznab_caps, query, self.name, is_meta_indexer
+            self.torznab_caps,
+            query,
+            self.name,
+            is_meta_indexer or self.is_meta,
         ):
             return False
         return self.supports_pagination or query.offset <= 0
 
     def _cached_result(self, query: TorznabQuery) -> IndexerResult | None:
-        if not query.cache:
+        if not self.caches_results or not query.cache:
             return None
         releases = self._deps.cache.search(self, query)
         if releases is None:
@@ -242,17 +268,25 @@ class BaseIndexer(ABC):
         return IndexerResult(self, releases, 0, True)
 
     async def _search_tracker(self, query: TorznabQuery) -> IndexerResult:
-        started = time.monotonic()
+        stopwatch = Stopwatch(self._clock)
         releases = await self.perform_query(query)
-        elapsed_ms = int((time.monotonic() - started) * 1000)
+        elapsed_ms = stopwatch.elapsed_ms
         releases = self._post_process(query, releases)
+        self._record_outcome(query, releases)
+        return IndexerResult(self, releases, elapsed_ms, False)
+
+    def _record_outcome(
+        self, query: TorznabQuery, releases: list[ReleaseInfo]
+    ) -> None:
+        """Remember a successful search: cache it and mark us healthy."""
         self._deps.cache.cache_results(self, query, releases)
         self.health.record_success(self._healthy_validity_seconds())
-        return IndexerResult(self, releases, elapsed_ms, False)
 
     def _post_process(
         self, query: TorznabQuery, releases: list[ReleaseInfo]
     ) -> list[ReleaseInfo]:
         """Validate and normalise what the tracker returned."""
         releases = filter_results(releases, query, self.torznab_caps, self.id)
-        return deduplicate_by_guid(fix_results(releases, self))
+        return deduplicate_by_guid(
+            fix_results(releases, self, self._clock.now())
+        )

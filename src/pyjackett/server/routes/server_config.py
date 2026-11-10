@@ -15,7 +15,7 @@ from pyjackett.server.config_update import (
     apply_server_config,
     config_json,
 )
-from pyjackett.server.deps import get_context as _context
+from pyjackett.server.deps import Context
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v2.0/server")
@@ -25,28 +25,24 @@ protected = APIRouter(
 
 
 @protected.get("/config")
-async def get_config(request: Request):
-    return config_json(_context(request))
+async def get_config(context: Context):
+    return config_json(context)
 
 
 @protected.post("/config")
-async def update_config(request: Request, payload: ServerConfigPayload):
-    context = _context(request)
+async def update_config(context: Context, payload: ServerConfigPayload):
     restart = apply_server_config(context, payload)
     context.save_config()
     context.indexers.init_meta_indexers()
     context.config.notify_changed()
-    logging.getLogger("pyjackett").setLevel(
-        logging.DEBUG if payload.logging else logging.INFO
-    )
+    context.log_cache.set_debug(payload.logging)
     result = config_json(context)
     result["restart_required"] = restart
     return result
 
 
 @protected.post("/adminpassword")
-async def set_admin_password(request: Request):
-    context = _context(request)
+async def set_admin_password(request: Request, context: Context):
     password = await request.json() or None
     hashed = context.security.hash_password(password)
     if hashed != context.config.admin_password:
@@ -56,8 +52,8 @@ async def set_admin_password(request: Request):
 
 
 @protected.get("/logs")
-async def logs(request: Request):
-    return _context(request).log_cache.logs
+async def logs(context: Context):
+    return context.log_cache.logs
 
 
 @protected.post("/update")
@@ -67,9 +63,8 @@ async def update(request: Request):
 
 
 @router.post("/shutdown")
-async def shutdown(request: Request):
-    context = _context(request)
-    if not has_valid_api_key(context, request):
+async def shutdown(request: Request, context: Context):
+    if not has_valid_api_key(context.security, request):
         return Response(status_code=401)
     logger.warning("Shutdown requested via API")
     asyncio.get_running_loop().call_later(

@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-import asyncio
 import logging
-import time
 from urllib.parse import urlsplit
 
 from pyjackett.http.flaresolverr import is_cloudflare_challenge
@@ -15,6 +13,7 @@ from pyjackett.http.response_parser import (
     refresh_delay_seconds,
 )
 from pyjackett.http.session import HttpSession
+from pyjackett.utils.clock import SYSTEM_CLOCK, Clock
 from pyjackett.utils.cookies import merge_headers
 
 logger = logging.getLogger(__name__)
@@ -31,31 +30,45 @@ class WebClient:
     Cloudflare clearance obtained from FlareSolverr.
     """
 
-    def __init__(self, session: HttpSession) -> None:
+    def __init__(
+        self,
+        session: HttpSession,
+        clock: Clock = SYSTEM_CLOCK,
+        request_delay: float = 0.0,
+        emulate_browser: bool = True,
+    ) -> None:
         self._session = session
-        self.request_delay = 0.0  # seconds between two requests
-        self.emulate_browser = True
-        self._last_request = 0.0
+        self._clock = clock
+        self._request_delay = request_delay  # seconds between two requests
+        self._emulate_browser = emulate_browser
+        self._last_request: float | None = None
         self._clearance: dict[str, tuple[str, str | None]] = {}
+
+    @property
+    def request_delay(self) -> float:
+        return self._request_delay
+
+    def set_request_delay(self, seconds: float) -> None:
+        self._request_delay = seconds
 
     # ---- public API ----------------------------------------------------
 
     async def get_result(self, request: WebRequest) -> WebResult:
         if request.emulate_browser is None:
-            request.emulate_browser = self.emulate_browser
+            request.emulate_browser = self._emulate_browser
         await self._wait_for_request_delay(request)
         result = await self._fetch(request)
-        self._last_request = time.monotonic()
+        self._last_request = self._clock.monotonic()
         result.request = request
         return result
 
     # ---- throttling --------------------------------------------------------
 
     async def _wait_for_request_delay(self, request: WebRequest) -> None:
-        if not self.request_delay:
+        if not self._request_delay or self._last_request is None:
             return
-        remaining = self.request_delay - (
-            time.monotonic() - self._last_request
+        remaining = self._request_delay - (
+            self._clock.monotonic() - self._last_request
         )
         if remaining > 0:
             logger.debug(
@@ -63,7 +76,7 @@ class WebClient:
                 request.url,
                 remaining,
             )
-            await asyncio.sleep(remaining)
+            await self._clock.sleep(remaining)
 
     # ---- fetching -----------------------------------------------------------
 
@@ -91,7 +104,7 @@ class WebClient:
         """Some Cloudflare setups answer 503 with a ``Refresh`` header."""
         if result.status == _REFRESH_STATUS and "refresh" in result.headers:
             wait = min(refresh_delay_seconds(result), MAX_REFRESH_WAIT_SECONDS)
-            await asyncio.sleep(wait)
+            await self._clock.sleep(wait)
             result.status = 302
         return result
 

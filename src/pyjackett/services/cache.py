@@ -18,6 +18,7 @@ from pyjackett.config.server_config import ServerConfig
 from pyjackett.core.query import TorznabQuery
 from pyjackett.core.release import ReleaseInfo
 from pyjackett.core.tracker_result import TrackerCacheResult
+from pyjackett.utils.clock import SYSTEM_CLOCK, Clock
 
 if TYPE_CHECKING:
     from pyjackett.indexers.base import BaseIndexer
@@ -50,8 +51,11 @@ def _query_hash(query: TorznabQuery) -> str:
 class ResultsCache:
     """Thread-safe store of releases keyed by indexer and query."""
 
-    def __init__(self, config: ServerConfig) -> None:
+    def __init__(
+        self, config: ServerConfig, clock: Clock = SYSTEM_CLOCK
+    ) -> None:
         self._config = config
+        self._clock = clock
         self._trackers: dict[str, _TrackerCache] = {}
         self._lock = threading.RLock()
 
@@ -77,7 +81,7 @@ class ResultsCache:
                 _TrackerCache(indexer.id, indexer.name, indexer.type),
             )
             tracker.queries[_query_hash(query)] = _CachedQuery(
-                datetime.now(), [release.clone() for release in releases]
+                self._clock.now(), [release.clone() for release in releases]
             )
             self._prune_by_max_results(tracker)
 
@@ -156,7 +160,7 @@ class ResultsCache:
         return self._config.cache_enabled
 
     def _prune_by_ttl(self) -> None:
-        expiry = datetime.now() - self.ttl
+        expiry = self._clock.now() - self.ttl
         for tracker in self._trackers.values():
             expired = [
                 k for k, q in tracker.queries.items() if q.created < expiry

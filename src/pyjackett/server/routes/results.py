@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import time
 from datetime import UTC
 from typing import Annotated
 
@@ -32,6 +31,7 @@ from pyjackett.server.query_parsing import (
 from pyjackett.server.serialization import release_json
 from pyjackett.server.torznab_validation import validate_query
 from pyjackett.server.urls import server_url
+from pyjackett.utils.clock import Stopwatch
 from pyjackett.utils.numbers import format_imdb_id
 
 logger = logging.getLogger(__name__)
@@ -94,7 +94,7 @@ def authorized_indexer(errors):
     def dependency(
         request: Request, indexer_id: str, context: Context
     ) -> BaseIndexer:
-        if not has_valid_api_key(context, request):
+        if not has_valid_api_key(context.security, request):
             raise GuardFailureError(errors.invalid_api_key())
         try:
             indexer = context.indexers.get_indexer(indexer_id)
@@ -129,8 +129,7 @@ def _indexers_listing(indexer: BaseIndexer, configured: str | None):
     return Response(torznab_xml.indexers_xml(members), media_type=XML_TYPE)
 
 
-def _log_search(kind, indexer, query, count, from_cache, started) -> None:
-    elapsed = (time.monotonic() - started) * 1000
+def _log_search(kind, indexer, query, count, from_cache, elapsed) -> None:
     cache = " (from cache)" if from_cache else ""
     term = query.query_string()
     where = f" for {term}" if term else ""
@@ -146,7 +145,6 @@ def _log_search(kind, indexer, query, count, from_cache, started) -> None:
 
 
 async def _torznab_results(request, context, indexer, query) -> Response:
-    started = time.monotonic()
     try:
         result = await indexer.results_for_query(query)
     except IndexerRateLimitedError as error:
@@ -157,7 +155,12 @@ async def _torznab_results(request, context, indexer, query) -> Response:
     url = server_url(context, request)
     releases = [proxy_release(context, r, url) for r in result.releases]
     _log_search(
-        "Torznab", indexer, query, len(releases), result.is_from_cache, started
+        "Torznab",
+        indexer,
+        query,
+        len(releases),
+        result.is_from_cache,
+        result.elapsed_ms,
     )
     xml = torznab_xml.results_xml(
         releases, indexer.name, indexer.description, indexer.site_link, url
@@ -307,7 +310,7 @@ def _outcome_json(task: asyncio.Task, indexer: BaseIndexer) -> dict:
 async def manual_search(
     request: Request, context: Context, indexer: PlainIndexer
 ):
-    started = time.monotonic()
+    stopwatch = Stopwatch(context.clock)
     query = manual_search_query(_manual_parameters(request))
     requested = [
         t for t in request.query_params.get("Tracker[]", "").split(",") if t
@@ -325,7 +328,7 @@ async def manual_search(
         _outcome_json(t, i) for t, i in zip(tasks, trackers, strict=True)
     ]
     results = _collect_results(context, tasks, url)
-    _log_manual(trackers, query, len(results), started)
+    _log_manual(trackers, query, len(results), stopwatch.elapsed_ms)
     return JSONResponse({"indexers": statuses, "results": results})
 
 
@@ -351,9 +354,8 @@ def _collect_results(context, tasks, url) -> list[dict]:
     return [release_json(r) for r in collected]
 
 
-def _log_manual(trackers, query, count, started) -> None:
+def _log_manual(trackers, query, count, elapsed) -> None:
     names = ", ".join(sorted(t.name for t in trackers))
-    elapsed = (time.monotonic() - started) * 1000
     term = query.query_string()
     where = f" for {term}" if term else ""
     logger.info(

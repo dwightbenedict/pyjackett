@@ -9,6 +9,7 @@ from typing import Protocol
 from pyjackett.http.client import WebClient
 from pyjackett.http.models import RequestType, WebRequest, WebResult
 from pyjackett.indexers.retry import retry_request
+from pyjackett.utils.clock import SYSTEM_CLOCK, Clock
 from pyjackett.utils.cookies import dict_to_header, header_to_dict
 from pyjackett.utils.text import is_blank
 
@@ -55,10 +56,12 @@ class WebRequester:
         client: WebClient,
         owner: CookieOwner,
         retries: Callable[[], int],
+        clock: Clock = SYSTEM_CLOCK,
     ) -> None:
         self._client = client
         self._owner = owner
         self._retries = retries
+        self._clock = clock
 
     # ---- cookies ----------------------------------------------------------
 
@@ -128,11 +131,15 @@ class WebRequester:
             lambda: self.request(*args, **kwargs),
             self._retries(),
             self._owner.name,
+            self._clock,
         )
 
     async def send_with_retry(self, request: WebRequest) -> WebResult:
         return await retry_request(
-            lambda: self.send(request), self._retries(), self._owner.name
+            lambda: self.send(request),
+            self._retries(),
+            self._owner.name,
+            self._clock,
         )
 
     # ---- redirects ----------------------------------------------------------

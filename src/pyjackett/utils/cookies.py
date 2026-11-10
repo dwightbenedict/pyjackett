@@ -45,17 +45,17 @@ def _max_age_expired(value: str) -> bool | None:
         return None
 
 
-def _expires_expired(value: str) -> bool | None:
+def _expires_expired(value: str, now: datetime) -> bool | None:
     try:
         moment = parsedate_to_datetime(value)
     except (TypeError, ValueError):
         return None
     if moment.tzinfo is None:
         moment = moment.replace(tzinfo=UTC)
-    return moment < datetime.now(UTC)
+    return moment < now
 
 
-def _is_expired(attributes: list[str]) -> bool:
+def _is_expired(attributes: list[str], now: datetime) -> bool:
     """Max-Age has precedence over Expires (RFC 6265)."""
     verdicts: dict[str, bool | None] = {}
     for attribute in attributes:
@@ -64,19 +64,19 @@ def _is_expired(attributes: list[str]) -> bool:
         if key == "max-age":
             verdicts[key] = _max_age_expired(value.strip())
         elif key == "expires":
-            verdicts[key] = _expires_expired(value.strip())
+            verdicts[key] = _expires_expired(value.strip(), now)
     verdict = verdicts.get("max-age")
     if verdict is None:
         verdict = verdicts.get("expires")
     return bool(verdict)
 
 
-def set_cookie_to_pair(set_cookie: str) -> str:
+def set_cookie_to_pair(set_cookie: str, now: datetime | None = None) -> str:
     """Convert a Set-Cookie header into a ``name=value;`` pair."""
     attributes = [part.strip() for part in set_cookie.split(";")]
     name, separator, _ = attributes[0].partition("=")
     if not separator:
         return attributes[0] + ";"
-    if _is_expired(attributes[1:]):
+    if _is_expired(attributes[1:], now or datetime.now(UTC)):
         return f"{name}={EXPIRED_COOKIE_VALUE};"
     return attributes[0] + ";"

@@ -93,7 +93,7 @@ class CardigannIndexer(BaseWebIndexer):
         self.legacy_site_links = tuple(definition.legacylinks or ())
         super().__init__(dependencies, build_configuration(definition))
         if definition.request_delay is not None:
-            self.client.request_delay = definition.request_delay
+            self.client.set_request_delay(definition.request_delay)
         self.torznab_caps, default_categories = build_capabilities(
             definition.caps, self.id
         )

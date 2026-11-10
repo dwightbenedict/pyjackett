@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-import time
 import uuid
 from pathlib import Path
 from urllib.parse import parse_qs
@@ -13,7 +12,7 @@ from fastapi.responses import JSONResponse
 
 from pyjackett.app_context import AppContext
 from pyjackett.indexers.web import BaseWebIndexer
-from pyjackett.server.deps import get_context as _context
+from pyjackett.server.deps import Context
 from pyjackett.utils import bencode
 from pyjackett.utils.text import make_valid_file_name
 from pyjackett.utils.urls import base64url_decode
@@ -51,13 +50,14 @@ def _web_indexer(context: AppContext, indexer_id: str) -> BaseWebIndexer:
 
 
 def _authorized(context: AppContext, request: Request) -> bool:
-    return _query_value(request, "jackett_apikey") == context.config.api_key
+    return context.security.is_valid_api_key(
+        _query_value(request, "jackett_apikey")
+    )
 
 
 @router.get("/dl/{indexer_id}")
 @router.get("/dl/{indexer_id}/")
-async def download(request: Request, indexer_id: str):
-    context = _context(request)
+async def download(request: Request, context: Context, indexer_id: str):
     if not _authorized(context, request):
         return Response(status_code=401)
     try:
@@ -83,10 +83,10 @@ async def download(request: Request, indexer_id: str):
         return Response(status_code=404)
 
 
-def _blackhole_file_name(indexer_name: str, file: str, extension: str) -> str:
-    stamp = (
-        f"{time.time_ns()}-{make_valid_file_name(indexer_name, '_', False)}"
-    )
+def _blackhole_file_name(
+    stamp_ns: int, indexer_name: str, file: str, extension: str
+) -> str:
+    stamp = f"{stamp_ns}-{make_valid_file_name(indexer_name, '_', False)}"
     if not file.strip():
         return stamp + extension
     return f"{stamp}-{make_valid_file_name(file + extension, '_', False)}"
@@ -104,8 +104,7 @@ def _write_blackhole(
 
 @router.get("/bh/{indexer_id}")
 @router.get("/bh/{indexer_id}/")
-async def blackhole(request: Request, indexer_id: str):
-    context = _context(request)
+async def blackhole(request: Request, context: Context, indexer_id: str):
     if not _authorized(context, request):
         return Response(status_code=401)
     try:
@@ -119,7 +118,10 @@ async def blackhole(request: Request, indexer_id: str):
         extension = ".magnet" if data.startswith(MAGNET_PREFIX) else ".torrent"
         directory = _blackhole_directory(context)
         name = _blackhole_file_name(
-            indexer.name, _query_value(request, "file") or "", extension
+            int(context.clock.time() * 1e9),
+            indexer.name,
+            _query_value(request, "file") or "",
+            extension,
         )
         _write_blackhole(directory, name, data, extension)
         return JSONResponse({"result": "success"})
@@ -142,8 +144,7 @@ def _blackhole_directory(context: AppContext) -> Path:
 
 @router.get("/img/{indexer_id}")
 @router.get("/img/{indexer_id}/")
-async def image(request: Request, indexer_id: str):
-    context = _context(request)
+async def image(request: Request, context: Context, indexer_id: str):
     if not _authorized(context, request):
         return Response(status_code=401)
     try:

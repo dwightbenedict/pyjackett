@@ -29,7 +29,9 @@ class BaseWebIndexer(BaseIndexer):
     ) -> None:
         super().__init__(dependencies, config_data)
         self.client = dependencies.client_factory()
-        self.requester = WebRequester(self.client, self, self.retry_attempts)
+        self.requester = WebRequester(
+            self.client, self, self.retry_attempts, self._clock
+        )
         self._downloader = TorrentDownloader(self.requester)
         self.download_url_base = download_base
 

@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, Request, Response
 
 from pyjackett.indexers.base import ConfigurationStatus
 from pyjackett.server.auth import require_dashboard_user
-from pyjackett.server.deps import get_context as _context
+from pyjackett.server.deps import Context
 from pyjackett.server.proxy_links import proxy_tracker_result
 from pyjackett.server.serialization import indexer_json, release_json
 from pyjackett.server.urls import server_url
@@ -19,8 +19,8 @@ router = APIRouter(
 
 
 @router.get("")
-async def list_indexers(request: Request, configured: bool = False):
-    indexers = _context(request).indexers.all_indexers()
+async def list_indexers(context: Context, configured: bool = False):
+    indexers = context.indexers.all_indexers()
     if configured:
         indexers = [i for i in indexers if i.is_configured]
     return [indexer_json(i) for i in indexers]
@@ -28,8 +28,7 @@ async def list_indexers(request: Request, configured: bool = False):
 
 # declared before ``/{indexer_id}`` routes so "cache" is not an indexer id
 @router.get("/cache")
-async def cached_results(request: Request):
-    context = _context(request)
+async def cached_results(request: Request, context: Context):
     url = server_url(context, request)
     results = context.cache.cached_results()
     for result in results:
@@ -38,15 +37,14 @@ async def cached_results(request: Request):
 
 
 @router.get("/{indexer_id}/config")
-async def get_config(request: Request, indexer_id: str):
-    indexer = _context(request).indexers.get_indexer(indexer_id)
+async def get_config(context: Context, indexer_id: str):
+    indexer = context.indexers.get_indexer(indexer_id)
     form = await indexer.get_configuration_for_setup()
     return form.to_json(None)
 
 
 @router.post("/{indexer_id}/config")
-async def update_config(request: Request, indexer_id: str):
-    context = _context(request)
+async def update_config(request: Request, context: Context, indexer_id: str):
     indexer = context.indexers.get_indexer(indexer_id)
     context.cache.clean_indexer_cache(indexer)
     posted: list[dict[str, Any]] = await request.json()
@@ -61,8 +59,7 @@ async def update_config(request: Request, indexer_id: str):
 
 
 @router.post("/{indexer_id}/test")
-async def test_indexer(request: Request, indexer_id: str):
-    context = _context(request)
+async def test_indexer(context: Context, indexer_id: str):
     indexer = context.indexers.get_indexer(indexer_id)
     try:
         await context.indexers.test_indexer(indexer.id)
@@ -79,6 +76,6 @@ def _describe(error: Exception) -> str:
 
 
 @router.delete("/{indexer_id}")
-async def delete_indexer(request: Request, indexer_id: str):
-    _context(request).indexers.delete_indexer(indexer_id)
+async def delete_indexer(context: Context, indexer_id: str):
+    context.indexers.delete_indexer(indexer_id)
     return Response(status_code=204)

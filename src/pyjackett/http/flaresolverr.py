@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from http.cookies import SimpleCookie
+from typing import Protocol
 
 import httpx
 
@@ -83,6 +85,19 @@ def _solution_cookies(solution: dict) -> str:
     )
 
 
+class ChallengeSolver(Protocol):
+    """Gets a page past a Cloudflare challenge."""
+
+    async def solve(self, request: WebRequest) -> Solution:
+        """Protocol method."""
+
+    async def aclose(self) -> None:
+        """Protocol method."""
+
+
+SolverFactory = Callable[[str, int, "dict | None"], ChallengeSolver]
+
+
 class FlareSolverrClient:
     """Asks a FlareSolverr instance to fetch a page like a real browser."""
 
@@ -92,12 +107,13 @@ class FlareSolverrClient:
         max_timeout: int = 55000,
         proxy: dict | None = None,
         transport: httpx.AsyncBaseTransport | None = None,
+        client_factory: Callable[..., httpx.AsyncClient] = httpx.AsyncClient,
     ) -> None:
         self._endpoint = _endpoint(url)
         self._max_timeout = max_timeout
         self._proxy = proxy
         timeout = max_timeout / 1000 + _TIMEOUT_MARGIN_SECONDS
-        self._http = httpx.AsyncClient(timeout=timeout, transport=transport)
+        self._http = client_factory(timeout=timeout, transport=transport)
 
     async def solve(self, request: WebRequest) -> Solution:
         payload = _payload(request, self._max_timeout, self._proxy)

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
 from http.cookiejar import CookieJar
 from typing import Any
 from urllib.parse import urlsplit
@@ -11,7 +12,11 @@ import httpx
 
 from pyjackett.config.server_config import ProxyType, ServerConfig
 from pyjackett.http.certificates import TrustedCertificates
-from pyjackett.http.flaresolverr import FlareSolverrClient
+from pyjackett.http.flaresolverr import (
+    ChallengeSolver,
+    FlareSolverrClient,
+    SolverFactory,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -64,14 +69,18 @@ class HttpSession:
         trusted_certificates: TrustedCertificates | None = None,
         transport: httpx.AsyncBaseTransport | None = None,
         timeout: float = DEFAULT_TIMEOUT_SECONDS,
+        solver_factory: SolverFactory = FlareSolverrClient,
+        client_factory: Callable[..., httpx.AsyncClient] = httpx.AsyncClient,
     ) -> None:
         self._config = config
         self._certificates = trusted_certificates or TrustedCertificates()
         self._transport = transport
         self._timeout = timeout
+        self._solver_factory = solver_factory
+        self._client_factory = client_factory
         self._proxy_address = config.proxy_address()
         self._flaresolverr_key = self._flaresolverr_settings()
-        self._flaresolverr: FlareSolverrClient | None = None
+        self._flaresolverr: ChallengeSolver | None = None
         self._clients: dict[bool, httpx.AsyncClient] = {}
         config.subscribe(self._on_config_changed)
 
@@ -97,7 +106,7 @@ class HttpSession:
             options["transport"] = self._transport
         else:
             options["proxy"] = _proxy_settings(self._config)
-        return httpx.AsyncClient(**options)
+        return self._client_factory(**options)
 
     # ---- sending ----------------------------------------------------------
 
@@ -128,13 +137,13 @@ class HttpSession:
         return (config.flaresolverr_url, config.flaresolverr_max_timeout)
 
     @property
-    def flaresolverr(self) -> FlareSolverrClient | None:
+    def flaresolverr(self) -> ChallengeSolver | None:
         """A solver client when FlareSolverr is configured, else None."""
         url = (self._config.flaresolverr_url or "").strip()
         if not url:
             return None
         if self._flaresolverr is None:
-            self._flaresolverr = FlareSolverrClient(
+            self._flaresolverr = self._solver_factory(
                 url,
                 self._config.flaresolverr_max_timeout,
                 _flaresolverr_proxy(self._config),

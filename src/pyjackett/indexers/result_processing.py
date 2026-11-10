@@ -96,9 +96,11 @@ def _ensure_guid(release: ReleaseInfo) -> None:
         release.guid = release.link or release.magnet_uri or release.details
 
 
-def fix_results(releases: list[ReleaseInfo], indexer) -> list[ReleaseInfo]:
+def fix_results(
+    releases: list[ReleaseInfo], indexer, now: datetime | None = None
+) -> list[ReleaseInfo]:
     """Attach the origin, repair dates and fill links/guid."""
-    now = local_now()
+    now = now or local_now()
     for release in releases:
         release.origin = indexer
         _clamp_future_date(release, now)

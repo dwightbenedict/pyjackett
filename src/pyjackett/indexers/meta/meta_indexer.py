@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import time
 from collections.abc import Callable, Iterable
 
 from pyjackett.config.indexer_config import ConfigurationData
@@ -29,6 +28,7 @@ class BaseMetaIndexer(BaseIndexer):
     """Queries every valid member indexer in parallel and merges results."""
 
     default_site_link = LOCAL_SITE_LINK
+    caches_results = False
 
     def __init__(
         self,
@@ -90,18 +90,16 @@ class BaseMetaIndexer(BaseIndexer):
 
     # ---- searching ----------------------------------------------------------
 
-    def _accepts(self, query: TorznabQuery, is_meta_indexer: bool) -> bool:
-        return super()._accepts(query, True)
+    def _post_process(
+        self, query: TorznabQuery, releases: list[ReleaseInfo]
+    ) -> list[ReleaseInfo]:
+        """Members already cleaned their own results."""
+        return releases
 
-    def _cached_result(self, query: TorznabQuery) -> IndexerResult | None:
-        """Members cache their own results."""
-        return None
-
-    async def _search_tracker(self, query: TorznabQuery) -> IndexerResult:
-        started = time.monotonic()
-        releases = await self.perform_query(query)
-        elapsed_ms = int((time.monotonic() - started) * 1000)
-        return IndexerResult(self, releases, elapsed_ms, False)
+    def _record_outcome(
+        self, query: TorznabQuery, releases: list[ReleaseInfo]
+    ) -> None:
+        """Members cache their results and track their own health."""
 
     async def perform_query(self, query: TorznabQuery) -> list[ReleaseInfo]:
         results = await self._query_members(query)
