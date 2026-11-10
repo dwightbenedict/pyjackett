@@ -27,6 +27,22 @@ Before finishing any refactor or feature, tests, `ruff check` and
 - Working-tree files use CRLF (git `autocrlf`). Keep a file's existing line
   endings when scripting edits.
 
+## Structure rules
+
+- Single responsibility, for functions and classes alike. A function does one
+  thing and its name says what; a class has one reason to change. If a
+  description needs "and", split it. Extract steps into named helpers rather
+  than growing a function with section comments.
+- Bundle related functions in a module. A module covers one topic
+  (`cardigann/login_form.py`, `utils/cookies.py`); do not mix unrelated
+  helpers, and do not create a catch-all `helpers.py`.
+- Bundle related modules in a package. A package covers one area
+  (`cardigann/`, `http/`, `indexers/`, `config/`, `server/routes/`). Put a new
+  module in the package that owns its topic, and create a new package only
+  for a new area with several modules.
+- When a module or class grows a second responsibility, split it before
+  adding the feature, not after.
+
 ## Design rules (apply to refactors and new features)
 
 ### Dependency injection
