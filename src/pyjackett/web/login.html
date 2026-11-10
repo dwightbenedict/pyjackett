@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>PyJackett · Sign in</title>
+  <link rel="icon" href="__BASE_PATH__/static/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="__BASE_PATH__/static/app.css">
+</head>
+<body class="login-page">
+  <form class="login-card" method="post" action="__BASE_PATH__/UI/Login">
+    <svg class="brand-mark large" viewBox="0 0 32 32" aria-hidden="true">
+      <rect width="32" height="32" rx="9" fill="currentColor"/>
+      <path d="M9 22l5-12 3 7 2-4 4 9" fill="none" stroke="var(--on-accent)"
+            stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <h1>PyJackett</h1>
+    <p class="muted">Enter the admin password to continue.</p>
+    <label class="field">
+      <span>Password</span>
+      <input type="password" name="password" autocomplete="current-password" autofocus required>
+    </label>
+    <p id="login-error" class="form-error" hidden>That password is not correct.</p>
+    <button class="btn primary block" type="submit">Sign in</button>
+  </form>
+  <script>
+    if (new URLSearchParams(location.search).has("error")) {
+      document.getElementById("login-error").hidden = false;
+    }
+  </script>
+</body>
+</html>

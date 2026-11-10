@@ -1,0 +1,38 @@
+"""Shared behaviour of indexers written in Python instead of YAML."""
+
+from __future__ import annotations
+
+from typing import Any
+
+from pyjackett.core.query import TorznabQuery
+from pyjackett.indexers.base import ConfigurationStatus
+from pyjackett.indexers.dependencies import IndexerDependencies
+from pyjackett.indexers.web import BaseWebIndexer
+
+
+class NativeIndexer(BaseWebIndexer):
+    """Subclasses set the class attributes and implement ``perform_query``.
+
+    ``default_site_link`` must end with a slash; capabilities are filled in
+    by overriding :meth:`build_capabilities`.
+    """
+
+    def __init__(self, dependencies: IndexerDependencies) -> None:
+        super().__init__(dependencies)
+        self.build_capabilities()
+        self.load_values_from_json(None)
+
+    def build_capabilities(self) -> None:
+        """Populate ``self.torznab_caps``."""
+
+    async def apply_configuration(
+        self, config: list[dict[str, Any]]
+    ) -> ConfigurationStatus:
+        """Accept the configuration if a test search returns releases."""
+        self.load_values_from_json(config)
+        releases = await self.perform_query(TorznabQuery(query_type="search"))
+        if not releases:
+            raise RuntimeError("Error: 0 results found!")
+        self.is_configured = True
+        self.config_changed()
+        return ConfigurationStatus.COMPLETED

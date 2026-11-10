@@ -1,0 +1,16 @@
+{
+  "name": "pyjackett-dashboard",
+  "private": true,
+  "type": "module",
+  "description": "Tooling for the PyJackett dashboard (no runtime dependencies)",
+  "scripts": {
+    "format": "prettier --write src/pyjackett/web/static/js",
+    "lint": "prettier --check src/pyjackett/web/static/js && eslint src/pyjackett/web/static/js"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.0.0",
+    "eslint": "^9.0.0",
+    "globals": "^15.0.0",
+    "prettier": "^3.3.0"
+  }
+}
