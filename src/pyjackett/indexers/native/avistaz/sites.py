@@ -1,0 +1,172 @@
+"""The sites of the AvistaZ network."""
+
+from __future__ import annotations
+
+from typing import Any
+
+from pyjackett.config.items import DisplayInfoItem, MultiSelectItem
+from pyjackett.core import category_catalog as cat
+from pyjackett.core.query import TorznabQuery
+from pyjackett.core.search_modes import SearchMode
+from pyjackett.indexers.native.avistaz.languages import (
+    AUDIO_LANGUAGES,
+    SUBTITLE_LANGUAGES,
+)
+from pyjackett.indexers.native.avistaz.tracker import (
+    FREELEECH,
+    AvistazTracker,
+    QueryParameters,
+)
+from pyjackett.indexers.native.forms import flag
+from pyjackett.indexers.native.support import first_if_single
+
+AUDIO_KEY = "searchaudiolanguages"
+SUBTITLE_KEY = "searchsubtitlelanguages"
+LANGUAGE_HELP = (
+    "The audio and subtitle language settings are AND searches, e.g. "
+    "selecting English audio with Basque and Catalan subtitles, will only "
+    "return results with all three of these."
+)
+INACTIVITY_HELP = (
+    "To avoid account deletion you must login at least 1 time every 90 "
+    "days, and you must download at least 1 torrent every 6 months. Simply "
+    "keeping torrents seeding long term will not protect your account"
+)
+
+
+class VideoTracker(AvistazTracker):
+    """The movie and TV sites share one category tree."""
+
+    def build_capabilities(self) -> None:
+        caps = self.torznab_caps
+        caps.set_parameters(
+            SearchMode.TV,
+            ["q", "season", "ep", "imdbid", "tvdbid", "genre"],
+        )
+        caps.set_parameters(
+            SearchMode.MOVIE, ["q", "imdbid", "tmdbid", "genre"]
+        )
+        caps.tv_search_imdb_available = True
+        for tracker_id, categories in (
+            (1, (cat.MOVIES, cat.MOVIES_UHD, cat.MOVIES_HD, cat.MOVIES_SD)),
+            (2, (cat.TV, cat.TVUHD, cat.TVHD, cat.TVSD)),
+        ):
+            for category in categories:
+                caps.categories.add(tracker_id, category)
+
+
+class AvistaZ(VideoTracker):
+    id = "avistaz"
+    name = "AvistaZ"
+    description = (
+        "AvistaZ (AsiaTorrents) is a Private Torrent Tracker for ASIAN "
+        "MOVIES / TV / GENERAL"
+    )
+    default_site_link = "https://avistaz.to/"
+
+    def build_capabilities(self) -> None:
+        super().build_capabilities()
+        self.torznab_caps.supports_raw_search = True
+        self.torznab_caps.categories.add(3, cat.AUDIO)
+
+    def build_configuration(self) -> None:
+        super().build_configuration()
+        data = self.config_data
+        data.add_dynamic(
+            AUDIO_KEY,
+            MultiSelectItem("Search Audio Languages", AUDIO_LANGUAGES),
+        )
+        data.add_dynamic(
+            SUBTITLE_KEY,
+            MultiSelectItem("Search Subtitle Languages", SUBTITLE_LANGUAGES),
+        )
+        data.add_dynamic(
+            "infosearchlanguages",
+            DisplayInfoItem("Info Search Languages", LANGUAGE_HELP),
+        )
+
+    def search_parameters(self, query: TorznabQuery) -> QueryParameters:
+        parameters = super().search_parameters(query)
+        for key, field in (
+            (AUDIO_KEY, "language[]"),
+            (SUBTITLE_KEY, "subtitle[]"),
+        ):
+            for language_id in dict.fromkeys(
+                self.config_data.get_dynamic(key).values
+            ):
+                parameters.append((field, language_id))
+        return parameters
+
+    def episode_term(self, query: TorznabQuery) -> str:
+        """AvistaZ has episodes without season, e.g. Running Man E323."""
+        if not query.season and (query.episode or "").strip():
+            return f"E{query.episode}"
+        return query.episode_search_string()
+
+
+class CinemaZ(VideoTracker):
+    id = "cinemaz"
+    name = "CinemaZ"
+    description = (
+        "CinemaZ (EuTorrents) is a Private Torrent Tracker for FOREIGN "
+        "NON-ASIAN MOVIES / TV"
+    )
+    default_site_link = "https://cinemaz.to/"
+
+
+class PrivateHD(VideoTracker):
+    id = "privatehd"
+    name = "PrivateHD"
+    description = (
+        "PrivateHD is a Private BitTorrent site for High Quality, High "
+        "Definition (HD) MOVIES and TV Shows"
+    )
+    default_site_link = "https://privatehd.to/"
+
+    def build_configuration(self) -> None:
+        super().build_configuration()
+        self.config_data.add_dynamic(
+            "accountinactivity",
+            DisplayInfoItem("Account Inactivity", INACTIVITY_HELP),
+        )
+
+
+class ExoticaZ(AvistazTracker):
+    id = "exoticaz"
+    name = "ExoticaZ"
+    description = "ExoticaZ (YourExotic) is a Private Torrent Tracker for 3X"
+    default_site_link = "https://exoticaz.to/"
+    legacy_site_links = ("https://torrents.yourexotic.com/",)
+    replaces = ("yourexotic",)
+
+    def build_capabilities(self) -> None:
+        add = self.torznab_caps.categories.add
+        add(1, cat.XX_XX_264, "Video Clip")
+        add(2, cat.XXX_PACK, "Video Pack")
+        add(3, cat.XXX_PACK, "Siterip Pack")
+        add(4, cat.XXX_PACK, "Pornstar Pack")
+        add(5, cat.XXXDVD, "DVD")
+        add(6, cat.XX_XX_264, "BluRay")
+        add(7, cat.XXX_IMAGE_SET, "Photo Pack")
+        add(8, cat.XXX_IMAGE_SET, "Books & Magazines")
+
+    def search_parameters(self, query: TorznabQuery) -> QueryParameters:
+        mapped = self.torznab_caps.categories.to_tracker_categories(query)
+        parameters: QueryParameters = [
+            ("in", "1"),
+            ("category", first_if_single(mapped, "0")),
+            ("limit", "50"),
+            ("search", self.search_term(query)),
+        ]
+        parameters += self._page_parameters(query)
+        if flag(self.config_data, FREELEECH):
+            parameters.append(("discount[]", "1"))
+        return parameters
+
+    def parse_categories(self, row: dict[str, Any]) -> list[int]:
+        categories = self.torznab_caps.categories
+        return [
+            torznab
+            for tracker_id in (row.get("category") or {})
+            for torznab in categories.to_torznab(str(tracker_id))
+        ]
