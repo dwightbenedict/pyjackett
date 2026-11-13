@@ -81,3 +81,14 @@ SECRET_CINEMA: CategoryTable = [
     ("1", "Movies", "Movies"),
     ("2", "Audio", "Music"),
 ]
+
+SIMURG: CategoryTable = [
+    ("3", "Books/EBook", "E-Books"),
+    ("4", "Audio/Audiobook", "Audiobooks"),
+    ("7", "Books/Comics", "Comics"),
+    ("8", "Books/Mags", "Magazines"),
+]
+
+DESI_GAANE: CategoryTable = [
+    ("1", "Audio", "Music"),
+]

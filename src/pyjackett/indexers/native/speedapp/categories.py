@@ -1,0 +1,61 @@
+"""Category tables of the SpeedApp trackers."""
+
+from __future__ import annotations
+
+CategoryTable = list[tuple[str, str] | tuple[str, str, str]]
+
+SPEED_APP: CategoryTable = [
+    ("38", "Movies", "Movie Packs"),
+    ("10", "Movies/SD", "Movies: SD"),
+    ("35", "Movies/SD", "Movies: SD Ro"),
+    ("8", "Movies/HD", "Movies: HD"),
+    ("29", "Movies/HD", "Movies: HD Ro"),
+    ("7", "Movies/DVD", "Movies: DVD"),
+    ("2", "Movies/DVD", "Movies: DVD Ro"),
+    ("17", "Movies/BluRay", "Movies: BluRay"),
+    ("24", "Movies/BluRay", "Movies: BluRay Ro"),
+    ("59", "Movies", "Movies: Ro"),
+    ("57", "Movies/UHD", "Movies: 4K (2160p) Ro"),
+    ("61", "Movies/UHD", "Movies: 4K (2160p)"),
+    ("41", "TV", "TV Packs"),
+    ("66", "TV", "TV Packs Ro"),
+    ("45", "TV/SD", "TV Episodes"),
+    ("46", "TV/SD", "TV Episodes Ro"),
+    ("43", "TV/HD", "TV Episodes HD"),
+    ("44", "TV/HD", "TV Episodes HD Ro"),
+    ("60", "TV", "TV Ro"),
+    ("11", "PC/Games", "Games: PC-ISO"),
+    ("52", "Console", "Games: Console"),
+    ("1", "PC/0day", "Applications"),
+    ("14", "PC", "Applications: Linux"),
+    ("37", "PC/Mac", "Applications: Mac"),
+    ("19", "PC/Mobile-Other", "Applications: Mobile"),
+    ("62", "TV", "TV Cartoons"),
+    ("3", "TV/Anime", "TV Anime / Hentai"),
+    ("6", "Books/EBook", "E-books"),
+    ("5", "Audio", "Music"),
+    ("64", "Audio/Video", "Music Video"),
+    ("68", "Audio/Lossless", "Music Lossless"),
+    ("18", "Other", "Images"),
+    ("22", "TV/Sport", "TV Sports"),
+    ("58", "TV/Sport", "TV Sports Ro"),
+    ("9", "TV/Documentary", "TV Documentary"),
+    ("63", "TV/Documentary", "TV Documentary Ro"),
+    ("65", "Other", "Tutorial"),
+    ("67", "Other/Misc", "Miscellaneous"),
+    ("15", "XXX", "XXX Movies"),
+    ("47", "XXX", "XXX DVD"),
+    ("48", "XXX", "XXX HD"),
+    ("49", "XXX/ImageSet", "XXX Images"),
+    ("50", "XXX", "XXX Packs"),
+    ("51", "XXX", "XXX SD"),
+]
+
+RETRO_FLIX: CategoryTable = [
+    ("401", "Movies", "Movies"),
+    ("402", "TV", "TV Series"),
+    ("406", "Audio/Video", "Music Videos"),
+    ("407", "TV/Sport", "Sports"),
+    ("409", "Books", "Books"),
+    ("408", "Audio", "HQ Audio"),
+]

@@ -8,15 +8,19 @@ from pyjackett.config.items import DisplayInfoItem, MultiSelectItem
 from pyjackett.core import category_catalog as cat
 from pyjackett.core.query import TorznabQuery
 from pyjackett.core.search_modes import SearchMode
+from pyjackett.indexers.native.avistaz import categories
 from pyjackett.indexers.native.avistaz.languages import (
     AUDIO_LANGUAGES,
     SUBTITLE_LANGUAGES,
 )
 from pyjackett.indexers.native.avistaz.tracker import (
     FREELEECH,
+    HTTP_OK,
+    HTTP_UNAUTHORIZED,
     AvistazTracker,
     QueryParameters,
 )
+from pyjackett.indexers.native.categories import add_categories
 from pyjackett.indexers.native.forms import flag
 from pyjackett.indexers.native.support import first_if_single
 
@@ -47,11 +51,11 @@ class VideoTracker(AvistazTracker):
             SearchMode.MOVIE, ["q", "imdbid", "tmdbid", "genre"]
         )
         caps.tv_search_imdb_available = True
-        for tracker_id, categories in (
+        for tracker_id, group in (
             (1, (cat.MOVIES, cat.MOVIES_UHD, cat.MOVIES_HD, cat.MOVIES_SD)),
             (2, (cat.TV, cat.TVUHD, cat.TVHD, cat.TVSD)),
         ):
-            for category in categories:
+            for category in group:
                 caps.categories.add(tracker_id, category)
 
 
@@ -170,3 +174,54 @@ class ExoticaZ(AvistazTracker):
             for tracker_id in (row.get("category") or {})
             for torznab in categories.to_torznab(str(tracker_id))
         ]
+
+
+class AnimeZ(AvistazTracker):
+    id = "animez"
+    name = "AnimeZ"
+    description = (
+        "AnimeZ (ex-AnimeTorrents) is a Private Torrent Tracker for "
+        "ANIME / MANGA"
+    )
+    default_site_link = "https://animez.to/"
+    legacy_site_links = ("https://animetorrents.me/",)
+    replaces = ("animetorrents",)
+
+    def build_capabilities(self) -> None:
+        caps = self.torznab_caps
+        caps.set_parameters(SearchMode.TV, ["q", "season", "ep"])
+        caps.set_parameters(SearchMode.MOVIE, ["q"])
+        caps.set_parameters(SearchMode.BOOK, ["q"])
+        add_categories(caps.categories, categories.ANIME_Z)
+
+    def search_parameters(self, query: TorznabQuery) -> QueryParameters:
+        parameters: QueryParameters = [("limit", "50")]
+        mapped = self.torznab_caps.categories.to_tracker_categories(query)
+        parameters += [("format[]", category) for category in mapped]
+        parameters.append(("search", self.search_term(query)))
+        parameters += self._page_parameters(query)
+        if flag(self.config_data, FREELEECH):
+            parameters.append(("freeleech", "1"))
+        return parameters
+
+    def parse_categories(self, row: dict[str, Any]) -> list[int]:
+        return self.torznab_caps.categories.to_torznab(row.get("format"))
+
+    def parse_title(self, row: dict[str, Any]) -> str | None:
+        return row.get("release_title") or row.get("file_name")
+
+    async def download(self, link: str) -> bytes:
+        if not self._token:
+            await self._renew_token()
+        response = await self._download_response(link)
+        if response.status == HTTP_UNAUTHORIZED:
+            await self._renew_token()
+            response = await self._download_response(link)
+        if response.status != HTTP_OK:
+            raise RuntimeError(f"Unknown error in download: {response.status}")
+        return response.content_bytes
+
+    async def _download_response(self, link: str):
+        return await self.requester.request(
+            self.unclean_link(link), headers=self._search_headers()
+        )

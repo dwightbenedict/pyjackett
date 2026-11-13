@@ -400,3 +400,111 @@ def _movie_title(
         title += f" / {html.unescape(remaster)}"
     title = re.sub(r"\bBDMV\b", "COMPLETE BLURAY", title, flags=re.I)
     return re.sub(r"\bSD\b", "DVDRip", title, flags=re.I)
+
+
+class Simurg(GazelleTracker):
+    id = "simurg"
+    name = "Simurg"
+    description = (
+        "Simurg is a Private Torrent Tracker for EBOOKS and AUDIOBOOKS"
+    )
+    default_site_link = "https://simurg.world/"
+    supports_freeleech_tokens = True
+    use_api_key = True
+    authorization_format = "token {}"
+    api_key_length = 116
+    # the formats that tell the kind of a release without a category
+    format_categories = {
+        "PDF": cat.BOOKS_E_BOOK,
+        "MOBI": cat.BOOKS_E_BOOK,
+        "EPUB": cat.BOOKS_E_BOOK,
+        "AZW3": cat.BOOKS_E_BOOK,
+        "CBR": cat.BOOKS_COMICS,
+        "CBZ": cat.BOOKS_COMICS,
+        "MP3": cat.AUDIO_AUDIOBOOK,
+        "M4B": cat.AUDIO_AUDIOBOOK,
+    }
+
+    def build_capabilities(self) -> None:
+        add_categories(self.torznab_caps.categories, categories.SIMURG)
+
+    def build_configuration(self) -> None:
+        super().build_configuration()
+        self.config_data.add_dynamic(
+            ACTIVITY,
+            DisplayInfoItem(
+                "Account Inactivity",
+                "To keep your account active, sign in and browse the site "
+                "at least once every 90 days. Seeding torrents does not "
+                "count as account activity.",
+            ),
+        )
+
+    def download_url(self, torrent_id: int, can_use_token: bool) -> str:
+        token = "&usetoken=1" if self._use_tokens and can_use_token else ""
+        return (
+            f"{self.site_link}ajax.php?action=download{token}&id={torrent_id}"
+        )
+
+    def post_parse(
+        self,
+        release: ReleaseInfo,
+        torrent: dict[str, Any],
+        result: dict[str, Any],
+    ) -> bool:
+        # Content categories are authoritative: a PDF can be a book, comic
+        # or magazine. Older grouped responses omit them.
+        label = torrent.get("category") or result.get("category")
+        mapped = self.torznab_caps.categories.to_torznab_by_description(label)
+        if mapped:
+            release.category = mapped
+            return True
+        by_format = self.format_categories.get(torrent.get("format"))
+        if by_format is not None:
+            release.category = [by_format.id]
+        return True
+
+    async def perform_query(self, query: TorznabQuery) -> list[ReleaseInfo]:
+        releases = await super().perform_query(query)
+        for release in releases:
+            release.minimum_ratio = RATIO_NOTE_MINIMUM
+            release.minimum_seed_time = 259200
+        return releases
+
+
+class DesiGaane(GazelleTracker):
+    id = "desigaane"
+    name = "DesiGaane"
+    description = "DesiGaane is a Private Torrent Tracker for DESI MUSIC"
+    default_site_link = "https://desigaane.rocks/"
+    supports_freeleech_tokens = True
+    use_api_key = True
+    api_key_length = 116
+
+    def build_capabilities(self) -> None:
+        add_categories(self.torznab_caps.categories, categories.DESI_GAANE)
+
+    def build_configuration(self) -> None:
+        super().build_configuration()
+        self.config_data.add_dynamic(
+            ACTIVITY,
+            DisplayInfoItem(
+                "Account Inactivity",
+                "To keep your account active, sign in and browse the site "
+                "at least once every 90 days. Seeding torrents does not "
+                "count as account activity.",
+            ),
+        )
+
+    def download_url(self, torrent_id: int, can_use_token: bool) -> str:
+        token = "&usetoken=1" if self._use_tokens and can_use_token else ""
+        return (
+            f"{self.site_link}ajax.php?action=download{token}&id={torrent_id}"
+        )
+
+    async def perform_query(self, query: TorznabQuery) -> list[ReleaseInfo]:
+        releases = await super().perform_query(query)
+        for release in releases:
+            release.minimum_ratio = RATIO_NOTE_MINIMUM
+            release.minimum_seed_time = 259200
+        return releases
