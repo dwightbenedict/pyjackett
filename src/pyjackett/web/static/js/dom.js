@@ -43,6 +43,16 @@ export function h(tag, props = {}, ...children) {
   return element;
 }
 
+/** A `[value, unit]` pair: the value in text colour, the unit quieter. */
+export function measure([value, unit]) {
+  return h(
+    "span",
+    { class: "measure" },
+    h("span", { class: "value" }, value),
+    unit ? h("span", { class: "unit" }, unit) : null,
+  );
+}
+
 export function clear(element) {
   element.replaceChildren();
   return element;

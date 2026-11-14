@@ -4,33 +4,26 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light dark">
-  <title>PyJackett</title>
+  <title>Jackett</title>
   <link rel="icon" href="__BASE_PATH__/static/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="__BASE_PATH__/static/app.css">
   <script type="module" src="__BASE_PATH__/static/js/app.js"></script>
 </head>
 <body>
   <header class="topbar">
-    <a class="brand" href="#indexers" aria-label="PyJackett home">
-      <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
-        <rect width="32" height="32" rx="9" fill="currentColor"/>
-        <path d="M9 22l5-12 3 7 2-4 4 9" fill="none" stroke="var(--on-accent)"
-              stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-      <span>PyJackett</span>
+    <a class="brand" href="#indexers" aria-label="Jackett home">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <span class="brand-name">Jackett</span>
     </a>
     <nav id="tabs" class="tabs" aria-label="Sections"></nav>
     <div class="topbar-actions">
-      <button id="api-key" class="chip" type="button" title="Copy API key">
-        <span class="chip-label">API key</span><code id="api-key-value">…</code>
-      </button>
-      <button id="theme" class="icon-btn" type="button" aria-label="Toggle theme"></button>
-      <a id="logout" class="icon-btn" href="__BASE_PATH__/UI/Logout" aria-label="Log out" hidden></a>
+      <a id="account" class="icon-btn" href="#account" aria-label="Account">
+        <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><defs><clipPath id="account-clip"><circle cx="12" cy="12" r="10.3"/></clipPath></defs><circle cx="12" cy="12" r="10.3"/><g clip-path="url(#account-clip)" fill="currentColor" stroke="none"><circle cx="12" cy="9.6" r="3.6"/><ellipse cx="12" cy="21" rx="7.4" ry="5.6"/></g></svg>
+      </a>
     </div>
   </header>
   <main id="view" class="view" tabindex="-1"></main>
   <div id="modal-root"></div>
-  <div id="toasts" class="toasts" role="status" aria-live="polite"></div>
-  <noscript>PyJackett's dashboard needs JavaScript.</noscript>
+  <noscript>Jackett's dashboard needs JavaScript.</noscript>
 </body>
 </html>

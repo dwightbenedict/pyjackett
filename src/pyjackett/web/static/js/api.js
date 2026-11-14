@@ -1,4 +1,4 @@
-// Thin client for the PyJackett management API.
+// Thin client for the Jackett management API.
 const BASE = document.documentElement.dataset.base || "";
 const ROOT = `${BASE}/api/v2.0`;
 
@@ -8,6 +8,7 @@ export class ApiError extends Error {
     this.name = "ApiError";
     this.config = details.config || null;
     this.status = details.status || 0;
+    this.latencyMs = details.latencyMs ?? null;
   }
 }
 
@@ -28,11 +29,25 @@ async function readError(response) {
     return new ApiError(data.error || response.statusText, {
       config: data.config,
       status: response.status,
+      latencyMs: data.latency_ms,
     });
   } catch {
     return new ApiError(response.statusText || "Request failed", {
       status: response.status,
     });
+  }
+}
+
+async function readLines(body, onLine) {
+  const reader = body.pipeThrough(new TextDecoderStream()).getReader();
+  let buffer = "";
+  for (;;) {
+    const { done, value } = await reader.read();
+    buffer += value || "";
+    const lines = buffer.split("\n");
+    buffer = done ? "" : lines.pop();
+    lines.filter(Boolean).forEach(onLine);
+    if (done) return;
   }
 }
 
@@ -52,13 +67,22 @@ async function request(path, { method = "GET", body, query } = {}) {
   return response.json();
 }
 
+/** Runs one operation over many indexers; resolves to one outcome each. */
+const bulk = (operation, ids) =>
+  request(`/indexers/bulk/${operation}`, { method: "POST", body: { ids } });
+
 export const api = {
   serverConfig: () => request("/server/config"),
   saveServerConfig: (config) =>
     request("/server/config", { method: "POST", body: config }),
   setAdminPassword: (password) =>
     request("/server/adminpassword", { method: "POST", body: password }),
+  setAdminUsername: (username) =>
+    request("/server/adminusername", { method: "POST", body: username }),
+  rotateApiKey: (password) =>
+    request("/server/apikey/rotate", { method: "POST", body: { password } }),
   logs: () => request("/server/logs"),
+  clearLogs: () => request("/server/logs", { method: "DELETE" }),
   indexers: (configuredOnly = false) =>
     request("/indexers", {
       query: { configured: configuredOnly || undefined },
@@ -66,13 +90,31 @@ export const api = {
   indexerConfig: (id) => request(`/indexers/${id}/config`),
   saveIndexerConfig: (id, items) =>
     request(`/indexers/${id}/config`, { method: "POST", body: items }),
+  addIndexer: (id) => request(`/indexers/${id}/add`, { method: "POST" }),
   testIndexer: (id) => request(`/indexers/${id}/test`, { method: "POST" }),
   deleteIndexer: (id) => request(`/indexers/${id}`, { method: "DELETE" }),
-  cache: () => request("/indexers/cache"),
+  bulkAdd: (ids) => bulk("add", ids),
+  bulkDelete: (ids) => bulk("delete", ids),
   search: (apiKey, params) =>
     request("/indexers/all/results", {
       query: { apikey: apiKey, ...params },
     }),
+  /** Calls `onChunk({indexer, results})` as each tracker finishes. */
+  searchStream: async (apiKey, params, onChunk, signal) => {
+    const response = await fetch(
+      withQuery(`${ROOT}/indexers/all/results/stream`, {
+        apikey: apiKey,
+        ...params,
+      }),
+      { credentials: "same-origin", signal },
+    );
+    if (response.status === 401) {
+      window.location.href = `${BASE}/UI/Login`;
+      throw new ApiError("Please sign in again", { status: 401 });
+    }
+    if (!response.ok) throw await readError(response);
+    await readLines(response.body, (line) => onChunk(JSON.parse(line)));
+  },
 };
 
 export const paths = {

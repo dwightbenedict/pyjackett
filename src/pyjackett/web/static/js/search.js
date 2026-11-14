@@ -1,133 +1,200 @@
-// "Search" tab: manual search across configured indexers.
+// "Search" tab: the form; submitting opens the results view.
 import { api } from "./api.js";
+import { standardCategories } from "./categories.js";
 import { clear, h } from "./dom.js";
-import { toast, withBusy } from "./feedback.js";
-import { mountResultsTable } from "./results-table.js";
+import { symbol } from "./icons.js";
+import { multiFilter } from "./multi-filter.js";
+import {
+  clearRecentSearches,
+  recentSearches,
+  rememberSearch,
+} from "./search-history.js";
+import { searchField } from "./search-field.js";
+import { renderSearchResults } from "./search-results.js";
+import { CONFIGURED_KEY, loadStale } from "./stale-cache.js";
 
-const CUSTOM_CATEGORY_START = 100000;
-
-function standardCategories(indexers) {
-  const categories = new Map();
-  for (const indexer of indexers) {
-    for (const cap of indexer.caps) {
-      if (Number(cap.ID) < CUSTOM_CATEGORY_START) {
-        categories.set(cap.ID, cap.Name);
-      }
-    }
-  }
-  return [...categories].sort((a, b) => Number(a[0]) - Number(b[0]));
-}
+const RESULTS_ROUTE = "#search/results";
 
 function preselectedTracker() {
   const query = location.hash.split("?")[1] || "";
   return new URLSearchParams(query).get("tracker");
 }
 
-function selectedValues(select) {
-  return [...select.selectedOptions].map((o) => o.value).join(",");
-}
+const split = (csv) => (csv ? csv.split(",") : []);
 
-function statusBadge(status) {
-  const ok = status.status === "ok";
-  return h(
-    "span",
-    {
-      class: `badge ${ok ? "ok" : "danger"}`,
-      title:
-        status.error || `${status.results} results in ${status.elapsed_ms} ms`,
-    },
-    `${status.name}: ${ok ? status.results : "error"}`,
-  );
-}
+// ---- form ----
 
-function indexerStatuses(statuses) {
-  return h(
-    "div",
-    { class: "badges", style: "margin-bottom:12px" },
-    statuses.map(statusBadge),
-  );
-}
-
-// ---- form controls ----
-
-function trackerSelect(indexers) {
+function initialTrackers(request) {
   const preselected = preselectedTracker();
-  return h(
-    "select",
-    { multiple: true, size: 6 },
-    indexers.map((i) =>
-      h("option", { value: i.id, selected: i.id === preselected }, i.name),
-    ),
+  return preselected ? [preselected] : split(request?.trackers);
+}
+
+function trackerFilter(indexers, selected, onChange) {
+  return multiFilter({
+    all: "All Indexers",
+    noun: "Indexers",
+    options: indexers.map((i) => [i.id, i.name]),
+    selected,
+    onChange,
+  });
+}
+
+// Categories on offer are those of the picked indexers (all if none).
+function categoryOptions(indexers, trackerIds) {
+  const picked = indexers.filter((i) => trackerIds.includes(i.id));
+  return standardCategories(picked.length ? picked : indexers).map(
+    ([id, name]) => [String(id), name],
   );
 }
 
-function categorySelect(indexers) {
-  return h(
-    "select",
-    { multiple: true, size: 6 },
-    standardCategories(indexers).map(([id, name]) =>
-      h("option", { value: id }, name),
-    ),
-  );
+function categoryFilter(options, request) {
+  const offered = new Set(options.map(([id]) => id));
+  return multiFilter({
+    all: "All Categories",
+    noun: "Categories",
+    options,
+    selected: split(request?.categories).filter((id) => offered.has(id)),
+  });
 }
 
-function labelled(text, control) {
-  return h("label", { class: "field" }, h("span", {}, text), control);
-}
-
-function searchForm({ query, trackers, categories, submit, onsubmit }) {
+// Same bar as the Indexers tab: the inputs first, the action below them.
+function searchBar({ query, trackers, categories, submit }) {
   return h(
     "form",
-    { class: "card card-pad", style: "margin-bottom:20px", onsubmit },
-    labelled("Query", query),
-    h(
-      "div",
-      { class: "two-col" },
-      labelled("Indexers (none selected = all)", trackers),
-      labelled("Categories (none selected = all)", categories),
-    ),
+    { class: "filter-bar" },
+    searchField(query),
+    h("div", { class: "filter-selects" }, trackers.root, categories.root),
     submit,
   );
 }
 
-// ---- running a search ----
+// ---- recent searches ----
 
-async function runSearch(controls, state, output) {
-  clear(output).append(h("p", { class: "muted" }, "Searching…"));
-  try {
-    const reply = await api.search(state.apiKey, {
-      query: controls.query.value,
-      "Tracker[]": selectedValues(controls.trackers),
-      "Category[]": selectedValues(controls.categories),
-    });
-    clear(output).append(indexerStatuses(reply.indexers));
-    mountResultsTable(output, reply.results);
-  } catch (error) {
-    clear(output);
-    toast(error.message, "error");
-  }
+// "Name" for one pick, "N Noun" for several; ids without a name are skipped.
+function pickedSummary(csv, names, noun) {
+  const picked = split(csv).filter((id) => names.has(id));
+  if (picked.length > 1) return `${picked.length} ${noun}`;
+  return picked.length ? names.get(picked[0]) : "";
 }
 
-export async function renderSearch(view, state) {
-  const indexers = await api.indexers(true);
+function recentDetail(request, { indexers, categories }) {
+  const names = (pairs) => new Map(pairs);
+  return [
+    pickedSummary(
+      request.trackers,
+      names(indexers.map((i) => [i.id, i.name])),
+      "Indexers",
+    ),
+    pickedSummary(
+      request.categories,
+      names(categories.map(([id, name]) => [String(id), name])),
+      "Categories",
+    ),
+  ]
+    .filter(Boolean)
+    .join(" · ");
+}
+
+function recentRow(request, open, lookup) {
+  const detail = recentDetail(request, lookup);
+  return h(
+    "button",
+    { class: "recent-row", type: "button", onclick: () => open(request) },
+    symbol("magnifyingglass", 18),
+    h(
+      "span",
+      { class: "recent-query" },
+      request.query,
+      detail ? h("small", { class: "recent-detail" }, detail) : null,
+    ),
+  );
+}
+
+function recentList(open, redraw, lookup) {
+  const recent = recentSearches();
+  if (!recent.length) {
+    return h("div", { class: "empty" }, symbol("magnifyingglass", 40, 1.4));
+  }
+  const clearAll = () => {
+    clearRecentSearches();
+    redraw();
+  };
+  return h(
+    "section",
+    {},
+    h(
+      "div",
+      { class: "section-head" },
+      h("h2", {}, "Recent Searches"),
+      h(
+        "button",
+        { class: "bar-btn", type: "button", onclick: clearAll },
+        "Clear",
+      ),
+    ),
+    h(
+      "div",
+      { class: "card recent-list" },
+      recent.map((r) => recentRow(r, open, lookup)),
+    ),
+  );
+}
+
+async function renderForm(view, state) {
+  const indexers = await loadStale(CONFIGURED_KEY, () => api.indexers(true));
+  const chosen = initialTrackers(state.search);
+  const categories = categoryFilter(
+    categoryOptions(indexers, chosen),
+    state.search,
+  );
+  const trackers = trackerFilter(indexers, chosen, () =>
+    categories.setOptions(categoryOptions(indexers, trackers.list())),
+  );
   const controls = {
     query: h("input", {
       type: "search",
-      placeholder: "Search for a title, or an IMDb id like tt0133093",
+      placeholder: "Title or IMDb ID, e.g. tt0133093",
       autofocus: true,
+      value: state.search?.query ?? "",
     }),
-    trackers: trackerSelect(indexers),
-    categories: categorySelect(indexers),
+    trackers,
+    categories,
     submit: h("button", { class: "btn primary", type: "submit" }, "Search"),
   };
-  const output = h("div", {});
-  controls.onsubmit = (event) => {
-    event.preventDefault();
-    withBusy(controls.submit, () => runSearch(controls, state, output));
+  const bar = searchBar(controls);
+  const open = (request) => {
+    state.search = request;
+    rememberSearch(request);
+    // Already on the results route (e.g. after a reload): no hashchange
+    // would fire, so ask the router to redraw.
+    if (location.hash === RESULTS_ROUTE) {
+      window.dispatchEvent(new Event("hashchange"));
+    }
+    location.hash = RESULTS_ROUTE;
   };
+  bar.addEventListener("submit", (event) => {
+    event.preventDefault();
+    open({
+      query: controls.query.value,
+      trackers: controls.trackers.values(),
+      categories: controls.categories.values(),
+    });
+  });
+  const recent = h("div", {});
+  const lookup = { indexers, categories: standardCategories(indexers) };
+  const showRecent = () =>
+    clear(recent).append(recentList(open, showRecent, lookup));
+  showRecent();
   clear(view).append(
-    h("div", { class: "view-head" }, h("h1", {}, "Manual search")),
-    searchForm(controls),
-    output,
+    h("div", { class: "view-head" }, h("h1", {}, "Search")),
+    bar,
+    recent,
   );
+}
+
+export function renderSearch(view, state) {
+  const onResults = location.hash.startsWith(RESULTS_ROUTE);
+  return onResults && state.search
+    ? renderSearchResults(view, state)
+    : renderForm(view, state);
 }
