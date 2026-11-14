@@ -1,0 +1,14 @@
+# Changes here will be overwritten by Copier. Do not edit by hand.
+_commit: v0.3.0-4-ge1afde8
+_src_path: https://github.com/pseudodex/templates
+adopt: true
+concurrency: async
+description: 'A Python port of Jackett: API support for your favorite torrent trackers.'
+frontend: none
+hosting: render-free
+interfaces:
+- fastapi
+kind: application
+language: python
+persistence: none
+project_name: pyjackett
