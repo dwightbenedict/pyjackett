@@ -27,6 +27,24 @@ A fresh install configures 13 major public indexers. Set
 
 The API is documented at `/api/v1/docs`.
 
+## Specification and documentation
+
+PyJackett aims to be a drop-in replacement for Jackett; the requirements are
+in [SPEC.md](SPEC.md).
+
+- [Torznab specification](https://torznab.github.io/spec-1.3-draft/): the
+  protocol clients speak. Jackett publishes no OpenAPI document, so this and
+  Jackett's behaviour are the API reference.
+- [Jackett on GitHub](https://github.com/Jackett/Jackett) and its
+  [wiki](https://github.com/Jackett/Jackett/wiki), including
+  [server configuration](https://github.com/Jackett/Jackett/wiki/Jackett-Configuration),
+  the [definition format](https://github.com/Jackett/Jackett/wiki/Definition-format)
+  and [supported trackers](https://github.com/Jackett/Jackett/wiki/Supported-Trackers).
+- PyJackett's API as an OpenAPI 3.1 document: [openapi.json](openapi.json)
+  (also served at `/api/v1/openapi.json`, with interactive docs at
+  `/api/v1/docs`). Regenerate it with `python scripts/export_openapi.py`.
+  Jackett's `/api/v2.0` paths are documented too, under the `jackett` tag.
+
 ## Configuration
 
 Settings live in `ServerConfig.json` (the same keys as Jackett's) in the data
