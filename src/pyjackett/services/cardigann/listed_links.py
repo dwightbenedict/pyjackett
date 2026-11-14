@@ -8,10 +8,9 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from urllib.parse import urlsplit
 
-from pyjackett.adapters.clock import Clock
-from pyjackett.adapters.http.client import WebClient
 from pyjackett.domain.http_models import WebRequest
 from pyjackett.domain.urls import url_host
+from pyjackett.services.ports import Clock, HttpClient
 
 logger = logging.getLogger(__name__)
 
@@ -97,7 +96,7 @@ def listed_links_for(indexer_id: str) -> ListedLinks | None:
 class ListedLinkFollower:
     """Finds a working address once the one in use stops answering."""
 
-    def __init__(self, source: ListedLinks, client: WebClient, clock: Clock) -> None:
+    def __init__(self, source: ListedLinks, client: HttpClient, clock: Clock) -> None:
         self._source = source
         self._client = client
         self._clock = clock

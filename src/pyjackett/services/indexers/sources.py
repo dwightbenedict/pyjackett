@@ -7,11 +7,11 @@ from collections.abc import Iterable
 from pathlib import Path
 from typing import Protocol
 
-from pyjackett.adapters.definition_cache import DefinitionCache
 from pyjackett.services.cardigann.indexer import CardigannIndexer
 from pyjackett.services.indexers.base import BaseIndexer
 from pyjackett.services.indexers.dependencies import IndexerDependencies
 from pyjackett.services.indexers.native import NATIVE_INDEXERS
+from pyjackett.services.ports import DefinitionParser
 
 logger = logging.getLogger(__name__)
 
@@ -51,10 +51,10 @@ class CardigannSource:
     def __init__(
         self,
         definition_dirs: Iterable[Path],
-        cache: DefinitionCache | None = None,
+        cache: DefinitionParser,
     ) -> None:
         self._definition_dirs = list(definition_dirs)
-        self._cache = cache or DefinitionCache()
+        self._cache = cache
 
     def load(self, dependencies: IndexerDependencies) -> list[BaseIndexer]:
         created = (self._create(dependencies, path) for path in self._files())

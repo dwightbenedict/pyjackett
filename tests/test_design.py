@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+from types import SimpleNamespace
+
 import pytest
 
+from pyjackett.adapters.clock import SYSTEM_CLOCK
 from pyjackett.domain.cardigann.methods import LoginMethod, request_type
 from pyjackett.domain.http_models import RequestType
 from pyjackett.domain.server_config import ServerConfig
@@ -41,7 +44,7 @@ def test_unknown_login_method_is_not_implemented():
 
 
 def test_meta_indexer_derives_its_state_and_rejects_assignment():
-    aggregate = AggregateIndexer(None, _NoImdb(), [])
+    aggregate = AggregateIndexer(SimpleNamespace(clock=SYSTEM_CLOCK), _NoImdb(), [])
     assert aggregate.is_meta
     assert aggregate.is_configured
     assert aggregate.members() == []
@@ -78,7 +81,7 @@ def test_registry_rejects_duplicates_and_resolves_renamed_ids():
 
 def test_expression_filters_are_cached_with_a_bound():
     config = ServerConfig()
-    factory = MetaIndexerFactory(None, config, [])
+    factory = MetaIndexerFactory(SimpleNamespace(clock=SYSTEM_CLOCK), config, [])
     factory.rebuild()
     assert factory.find("all").id == "all"
     assert factory.find("nonsense") is None
@@ -142,7 +145,7 @@ async def test_retry_does_not_repeat_configuration_errors():
         raise ConfigurationError("bad credentials")
 
     with pytest.raises(ConfigurationError):
-        await retry_request(operation, retries=3, name="x")
+        await retry_request(operation, retries=3, name="x", clock=SYSTEM_CLOCK)
     assert len(calls) == 1
 
 

@@ -12,7 +12,6 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Request, Response
 from fastapi.responses import JSONResponse, StreamingResponse
 
-from pyjackett.adapters.clock import Stopwatch
 from pyjackett.domain.numbers import format_imdb_id
 from pyjackett.domain.query import TorznabQuery
 from pyjackett.domain.tracker_result import TrackerCacheResult
@@ -49,6 +48,7 @@ from pyjackett.interfaces.torznab_validation import validate_query
 from pyjackett.interfaces.urls import server_url
 from pyjackett.services.indexers.base import BaseIndexer
 from pyjackett.services.indexers.manager import UnknownIndexerError
+from pyjackett.services.stopwatch import Stopwatch
 
 logger = logging.getLogger(__name__)
 router = APIRouter(

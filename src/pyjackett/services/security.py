@@ -6,13 +6,12 @@ import hashlib
 import hmac
 from collections.abc import Callable
 
-from pyjackett.adapters.clock import SYSTEM_CLOCK, Clock
-from pyjackett.adapters.server_config_store import generate_api_key
 from pyjackett.domain.server_config import ServerConfig
 from pyjackett.errors import (
     InvalidCredentialsError,
     InvalidPasswordError,
 )
+from pyjackett.services.ports import Clock
 
 DEFAULT_CREDENTIAL = "admin"
 SESSION_DAYS = 14
@@ -25,8 +24,8 @@ class SecurityService:
     def __init__(
         self,
         config: ServerConfig,
-        clock: Clock = SYSTEM_CLOCK,
-        new_api_key: Callable[[], str] = generate_api_key,
+        clock: Clock,
+        new_api_key: Callable[[], str],
     ) -> None:
         self._config = config
         self._clock = clock

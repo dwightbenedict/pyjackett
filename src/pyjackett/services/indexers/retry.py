@@ -5,12 +5,12 @@ from __future__ import annotations
 import logging
 from collections.abc import Awaitable, Callable
 
-from pyjackett.adapters.clock import SYSTEM_CLOCK, Clock
 from pyjackett.domain.http_models import WebResult
 from pyjackett.errors import (
     ConfigurationError,
     TooManyRequestsError,
 )
+from pyjackett.services.ports import Clock
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +34,7 @@ async def retry_request(
     operation: Callable[[], Awaitable[WebResult]],
     retries: int,
     name: str,
-    clock: Clock = SYSTEM_CLOCK,
+    clock: Clock,
 ) -> WebResult:
     """Call ``operation`` until it succeeds or ``retries`` are used up.
 

@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from urllib.parse import quote_plus
 
-from pyjackett.adapters.protection import ProtectionService
 from pyjackett.domain.server_config import ServerConfig
 from pyjackett.domain.urls import base64url_encode
+from pyjackett.services.ports import SecretProtector
 
 MAGNET_PREFIX = "magnet:"
 BLACKHOLE_ACTION = "bh"
@@ -15,7 +15,7 @@ BLACKHOLE_ACTION = "bh"
 class ServerService:
     """Builds the URLs Torznab clients use to download through us."""
 
-    def __init__(self, config: ServerConfig, protector: ProtectionService) -> None:
+    def __init__(self, config: ServerConfig, protector: SecretProtector) -> None:
         self._config = config
         self._protector = protector
 

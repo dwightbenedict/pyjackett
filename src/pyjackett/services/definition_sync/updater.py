@@ -6,10 +6,9 @@ import asyncio
 import logging
 from dataclasses import dataclass
 
-from pyjackett.adapters.definition_feed import DefinitionFeed
-from pyjackett.adapters.definition_store import DefinitionStore, Download
 from pyjackett.domain.cardigann.definition_loader import parse_definition
 from pyjackett.errors import DefinitionFeedError
+from pyjackett.services.ports import DefinitionFeed, DefinitionRepository, Download
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +40,7 @@ class DefinitionUpdater:
     def __init__(
         self,
         feed: DefinitionFeed,
-        store: DefinitionStore,
+        store: DefinitionRepository,
         parallel_downloads: int = MAX_PARALLEL_DOWNLOADS,
     ) -> None:
         self._feed = feed

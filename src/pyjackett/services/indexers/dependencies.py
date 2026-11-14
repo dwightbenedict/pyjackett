@@ -7,26 +7,14 @@ from dataclasses import dataclass, field
 from datetime import timedelta
 from typing import TYPE_CHECKING, Protocol
 
-from pyjackett.adapters.clock import SYSTEM_CLOCK, Clock
-from pyjackett.adapters.http.certificates import TrustedCertificates
-from pyjackett.adapters.http.client import WebClient
 from pyjackett.domain.query import TorznabQuery
 from pyjackett.domain.release import ReleaseInfo
 from pyjackett.services.indexers.search_limit import SearchLimit
+from pyjackett.services.ports import CertificateTrust, Clock, HttpClient, SecretProtector
 from pyjackett.services.single_flight import SingleFlight
 
 if TYPE_CHECKING:
     from pyjackett.services.indexers.base import BaseIndexer
-
-
-class SecretProtector(Protocol):
-    """Encrypts and decrypts the secrets stored in configuration files."""
-
-    def protect(self, plain_text: str | None) -> str:
-        """Protocol method."""
-
-    def unprotect(self, token: str | None) -> str:
-        """Protocol method."""
 
 
 class SearchCache(Protocol):
@@ -78,9 +66,9 @@ class NoStats:
 class IndexerDependencies:
     protector: SecretProtector
     cache: SearchCache
-    client_factory: Callable[[], WebClient]
-    trusted_certificates: TrustedCertificates
-    clock: Clock = SYSTEM_CLOCK
+    client_factory: Callable[[], HttpClient]
+    trusted_certificates: CertificateTrust
+    clock: Clock
     stats: StatsRecorder = field(default_factory=NoStats)
     search_limit: SearchLimit = field(default_factory=SearchLimit)
     single_flight: SingleFlight = field(default_factory=SingleFlight)

@@ -7,7 +7,7 @@ from collections import deque
 from dataclasses import asdict, dataclass
 from typing import Any
 
-from pyjackett.adapters.clock import SYSTEM_CLOCK, Clock
+from pyjackett.services.ports import Clock
 
 MAX_HISTORY_ENTRIES = 200
 
@@ -66,7 +66,7 @@ class SearchRecorder:
 
     def __init__(
         self,
-        clock: Clock = SYSTEM_CLOCK,
+        clock: Clock,
         capacity: int = MAX_HISTORY_ENTRIES,
     ) -> None:
         self._clock = clock

@@ -5,18 +5,11 @@ from __future__ import annotations
 import json
 import os
 from collections.abc import Iterable, Mapping
-from dataclasses import dataclass
 from pathlib import Path
 
+from pyjackett.services.ports import Download
+
 MANIFEST_FILE = "manifest.json"
-
-
-@dataclass(frozen=True)
-class Download:
-    """One definition fetched from the feed."""
-
-    text: str
-    revision: str
 
 
 class DefinitionStore:

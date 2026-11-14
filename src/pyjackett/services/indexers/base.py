@@ -8,7 +8,6 @@ from collections.abc import Callable
 from enum import StrEnum
 from typing import Any
 
-from pyjackett.adapters.clock import SYSTEM_CLOCK, Clock, Stopwatch
 from pyjackett.domain.capabilities import TorznabCapabilities
 from pyjackett.domain.indexer_config import ConfigurationData
 from pyjackett.domain.query import TorznabQuery
@@ -32,6 +31,8 @@ from pyjackett.services.indexers.result_processing import (
     filter_results,
     fix_results,
 )
+from pyjackett.services.ports import Clock
+from pyjackett.services.stopwatch import Stopwatch
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +67,7 @@ class BaseIndexer(ABC):
         config_data: ConfigurationData | None = None,
     ) -> None:
         self._deps = dependencies
-        self._clock: Clock = dependencies.clock if dependencies is not None else SYSTEM_CLOCK
+        self._clock: Clock = dependencies.clock
         self.config_data = config_data or ConfigurationData()
         self._torznab_caps = TorznabCapabilities()
         self.health = IndexerHealth(self._clock.monotonic)

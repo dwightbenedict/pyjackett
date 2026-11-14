@@ -5,12 +5,25 @@ from __future__ import annotations
 import copy
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from pyjackett.services.indexers.base import BaseIndexer
+from typing import Protocol
 
 _BYTES_PER_GIGABYTE = 1024.0**3
+
+
+class ReleaseOrigin(Protocol):
+    """What a release tells about the indexer it came from."""
+
+    @property
+    def id(self) -> str:
+        """Protocol method."""
+
+    @property
+    def name(self) -> str:
+        """Protocol method."""
+
+    @property
+    def type(self) -> str | None:
+        """Protocol method."""
 
 
 @dataclass(eq=False)
@@ -54,7 +67,7 @@ class ReleaseInfo:
     minimum_seed_time: int | None = None
     download_volume_factor: float | None = None
     upload_volume_factor: float | None = None
-    origin: BaseIndexer | None = field(default=None, repr=False)
+    origin: ReleaseOrigin | None = field(default=None, repr=False)
 
     @property
     def gain(self) -> float:

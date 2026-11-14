@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 import re
-from typing import Protocol
 
 from pyjackett import __version__
 from pyjackett.adapters.http.session import HttpSession
@@ -14,16 +13,6 @@ UPSTREAM_REPOSITORY = "Jackett/Jackett"
 UPSTREAM_BRANCH = "master"
 UPSTREAM_PATH = "src/Jackett.Common/Definitions"
 DEFINITION_NAME = re.compile(r"[A-Za-z0-9_.-]+\.yml")
-
-
-class DefinitionFeed(Protocol):
-    """A published set of definitions."""
-
-    async def list_files(self) -> dict[str, str]:
-        """The current revision of every definition, by file name."""
-
-    async def fetch(self, name: str) -> str:
-        """The text of one definition."""
 
 
 class GitHubDefinitionFeed:

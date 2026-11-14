@@ -9,6 +9,7 @@ from fastapi.testclient import TestClient
 from tests.conftest import FIXTURES, fake_tracker, sign_in_as_admin
 
 import fakes
+from pyjackett.adapters.clock import SYSTEM_CLOCK
 from pyjackett.errors import IndexerTestFailedError
 from pyjackett.interfaces.api import create_app
 from pyjackett.services.stats import SearchRecorder
@@ -163,7 +164,7 @@ def test_listing_reports_the_last_search_latency(configured, api_key):
 
 
 def test_recorder_keeps_the_last_successful_latency():
-    recorder = SearchRecorder()
+    recorder = SearchRecorder(SYSTEM_CLOCK)
     assert recorder.last_elapsed_ms("a") is None
     recorder.record_success("a", "", 1, 120)
     recorder.record_success("a", "", 1, 45)

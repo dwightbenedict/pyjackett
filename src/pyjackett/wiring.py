@@ -10,7 +10,7 @@ from pathlib import Path
 
 from curl_cffi.requests import AsyncSession
 
-from pyjackett.adapters.clock import SYSTEM_CLOCK, Clock
+from pyjackett.adapters.clock import SYSTEM_CLOCK
 from pyjackett.adapters.definition_cache import DefinitionCache
 from pyjackett.adapters.definition_feed import GitHubDefinitionFeed
 from pyjackett.adapters.definition_store import DefinitionStore
@@ -58,6 +58,7 @@ from pyjackett.services.indexers.search_limit import SearchLimit
 from pyjackett.services.indexers.sources import CardigannSource, NativeSource
 from pyjackett.services.indexers.test_runner import IndexerTestRunner
 from pyjackett.services.log_cache import LogCache
+from pyjackett.services.ports import Clock
 from pyjackett.services.security import SecurityService
 from pyjackett.services.server_service import ServerService
 from pyjackett.services.stats import SearchRecorder

@@ -6,12 +6,11 @@ import logging
 from collections.abc import Callable, Iterable
 from typing import Protocol
 
-from pyjackett.adapters.clock import SYSTEM_CLOCK, Clock
-from pyjackett.adapters.http.client import WebClient
 from pyjackett.domain.cookies import dict_to_header, header_to_dict
 from pyjackett.domain.http_models import RequestType, WebRequest, WebResult
 from pyjackett.domain.text import is_blank
 from pyjackett.services.indexers.retry import retry_request
+from pyjackett.services.ports import Clock, HttpClient
 
 logger = logging.getLogger(__name__)
 
@@ -52,10 +51,10 @@ class WebRequester:
 
     def __init__(
         self,
-        client: WebClient,
+        client: HttpClient,
         owner: CookieOwner,
         retries: Callable[[], int],
-        clock: Clock = SYSTEM_CLOCK,
+        clock: Clock,
     ) -> None:
         self._client = client
         self._owner = owner

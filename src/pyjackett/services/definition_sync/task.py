@@ -7,10 +7,10 @@ import contextlib
 import logging
 from collections.abc import Awaitable, Callable
 
-from pyjackett.adapters.clock import Clock
 from pyjackett.domain.server_config import ServerConfig
 from pyjackett.errors import DefinitionFeedError
 from pyjackett.services.definition_sync.updater import DefinitionUpdater
+from pyjackett.services.ports import Clock
 
 logger = logging.getLogger(__name__)
 

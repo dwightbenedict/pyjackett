@@ -14,11 +14,11 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING
 
-from pyjackett.adapters.clock import SYSTEM_CLOCK, Clock
 from pyjackett.domain.query import TorznabQuery
 from pyjackett.domain.release import ReleaseInfo
 from pyjackett.domain.server_config import ServerConfig
 from pyjackett.domain.tracker_result import TrackerCacheResult
+from pyjackett.services.ports import Clock
 
 if TYPE_CHECKING:
     from pyjackett.services.indexers.base import BaseIndexer
@@ -54,7 +54,7 @@ class ResultsCache:
     def __init__(
         self,
         config: ServerConfig,
-        clock: Clock = SYSTEM_CLOCK,
+        clock: Clock,
         max_total_results: int | None = None,
     ) -> None:
         self._config = config

@@ -4,14 +4,13 @@ from __future__ import annotations
 
 from typing import Protocol
 
-from pyjackett.adapters.clock import Clock
-from pyjackett.adapters.http.client import WebClient
 from pyjackett.domain.cardigann.definition import IndexerDefinition
 from pyjackett.domain.cardigann.rotating_links import rotating_links_for
 from pyjackett.services.cardigann.listed_links import (
     ListedLinkFollower,
     listed_links_for,
 )
+from pyjackett.services.ports import Clock, HttpClient
 
 
 def _with_slash(link: str) -> str:
@@ -41,7 +40,7 @@ class SiteAddress:
         self,
         host: AddressHost,
         definition: IndexerDefinition,
-        client: WebClient,
+        client: HttpClient,
         clock: Clock,
     ) -> None:
         self._host = host

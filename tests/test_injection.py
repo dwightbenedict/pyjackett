@@ -4,13 +4,15 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime, timedelta
+from types import SimpleNamespace
 
 import pytest
 
 import fakes
-from pyjackett.adapters.clock import Stopwatch
+from pyjackett.adapters.clock import SYSTEM_CLOCK
 from pyjackett.adapters.http.client import WebClient
 from pyjackett.adapters.http.session import HttpSession
+from pyjackett.adapters.server_config_store import generate_api_key
 from pyjackett.domain.http_models import WebRequest, WebResult
 from pyjackett.domain.server_config import ServerConfig
 from pyjackett.services.cache import ResultsCache
@@ -21,6 +23,7 @@ from pyjackett.services.security import (
     SESSION_DAYS,
     SecurityService,
 )
+from pyjackett.services.stopwatch import Stopwatch
 
 
 class FakeClock:
@@ -105,7 +108,7 @@ def test_cache_expires_entries_by_the_injected_clock():
 def test_session_cookie_expires_by_the_injected_clock():
     clock = FakeClock()
     config = ServerConfig()
-    security = SecurityService(config, clock)
+    security = SecurityService(config, clock, generate_api_key)
     cookie = security.create_session_cookie()
     assert security.is_valid_session(cookie)
     assert not security.is_valid_session(cookie + "x")
@@ -115,7 +118,7 @@ def test_session_cookie_expires_by_the_injected_clock():
 
 def test_api_key_check():
     config = ServerConfig(api_key="key")
-    security = SecurityService(config)
+    security = SecurityService(config, SYSTEM_CLOCK, generate_api_key)
     assert security.is_valid_api_key(config.api_key)
     assert not security.is_valid_api_key("wrong")
     assert not security.is_valid_api_key(None)
@@ -180,7 +183,7 @@ async def test_indexer_verify_raises_a_domain_error(found):
         async def results_for_query(self, query, is_meta_indexer=False):
             return IndexerResult(self, [object()] if found else [])
 
-    indexer = Stub(None)
+    indexer = Stub(SimpleNamespace(clock=SYSTEM_CLOCK))
     if found:
         await indexer.verify()
     else:

@@ -6,6 +6,7 @@ import asyncio
 
 import pytest
 
+from pyjackett.adapters.clock import SYSTEM_CLOCK
 from pyjackett.adapters.definition_cache import DefinitionCache
 from pyjackett.domain.query import TorznabQuery
 from pyjackett.domain.release import ReleaseInfo
@@ -121,7 +122,7 @@ def test_cache_drops_the_oldest_queries_over_the_total_cap():
 
 
 def test_cache_without_a_total_cap_keeps_everything():
-    cache = ResultsCache(ServerConfig())
+    cache = ResultsCache(ServerConfig(), SYSTEM_CLOCK)
     for name in "abc":
         cache.cache_results(Indexer(name), query("q"), releases(50))
     assert all(len(cache.search(Indexer(name), query("q"))) == 50 for name in "abc")

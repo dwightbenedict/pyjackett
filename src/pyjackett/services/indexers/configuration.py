@@ -5,8 +5,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from pyjackett.adapters.indexer_config_store import IndexerConfigStore
-from pyjackett.adapters.protection import ProtectionService
+from pyjackett.services.ports import IndexerConfigRepository, SecretProtector
 
 if TYPE_CHECKING:
     from pyjackett.services.indexers.base import BaseIndexer
@@ -17,12 +16,12 @@ logger = logging.getLogger(__name__)
 class IndexerConfigurationService:
     """Bridge between an indexer's form data and its JSON file."""
 
-    def __init__(self, store: IndexerConfigStore, protector: ProtectionService) -> None:
+    def __init__(self, store: IndexerConfigRepository, protector: SecretProtector) -> None:
         self._store = store
         self._protector = protector
 
     @property
-    def store(self) -> IndexerConfigStore:
+    def store(self) -> IndexerConfigRepository:
         return self._store
 
     def load(self, indexer: BaseIndexer) -> None:

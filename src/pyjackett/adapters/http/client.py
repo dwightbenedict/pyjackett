@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from urllib.parse import urlsplit
 
-from pyjackett.adapters.clock import SYSTEM_CLOCK, Clock
+from pyjackett.adapters.clock import SYSTEM_CLOCK
 from pyjackett.adapters.http.browser_profile import impersonation_for
 from pyjackett.adapters.http.flaresolverr import is_cloudflare_challenge
 from pyjackett.adapters.http.request_builder import build_request_kwargs
@@ -16,6 +16,7 @@ from pyjackett.adapters.http.response_parser import (
 from pyjackett.adapters.http.session import HttpSession
 from pyjackett.domain.cookies import merge_headers
 from pyjackett.domain.http_models import WebRequest, WebResult
+from pyjackett.services.ports import Clock
 
 logger = logging.getLogger(__name__)
 

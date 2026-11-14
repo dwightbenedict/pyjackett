@@ -11,11 +11,11 @@ import logging
 from typing import Protocol
 from urllib.parse import urljoin
 
-from pyjackett.adapters.http.client import WebClient
 from pyjackett.domain.http_models import WebRequest
 from pyjackett.domain.query import TorznabQuery
 from pyjackett.domain.release import ReleaseInfo
 from pyjackett.domain.text import contains_ignore_case
+from pyjackett.services.ports import HttpClient
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +30,7 @@ class ImdbResolver(Protocol):
 class OmdbResolver:
     """Looks up movie titles on the OMDb API."""
 
-    def __init__(self, client: WebClient, api_key: str, api_url: str | None) -> None:
+    def __init__(self, client: HttpClient, api_key: str, api_url: str | None) -> None:
         self._client = client
         self._api_key = api_key
         self._api_url = api_url or DEFAULT_OMDB_URL
