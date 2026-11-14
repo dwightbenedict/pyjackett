@@ -10,14 +10,14 @@ from pydantic import BaseModel
 
 from pyjackett import __version__
 from pyjackett.app_context import AppContext
-from pyjackett.config.server_config import ProxyType
+from pyjackett.config.server_config import DEFAULT_TEST_TIMEOUT, ProxyType
 
 logger = logging.getLogger(__name__)
 
 MIN_FLARESOLVERR_TIMEOUT = 5000
-INVALID_PORT_MESSAGE = (
-    "The port you have selected is invalid, it must be between 1 and 65535."
-)
+MIN_TEST_TIMEOUT = 1
+MAX_TEST_TIMEOUT = 300
+INVALID_PORT_MESSAGE = "Port must be between 1 and 65535."
 RESTRICTED_PORTS = frozenset(
     {
         1,
@@ -120,6 +120,7 @@ class ServerConfigPayload(BaseModel):
     cache_enabled: bool = True
     cache_ttl: int = 2100
     cache_max_results_per_indexer: int = 1000
+    test_timeout: int = DEFAULT_TEST_TIMEOUT
     flaresolverrurl: str | None = None
     flaresolverr_maxtimeout: int = 55000
     omdbkey: str | None = None
@@ -145,12 +146,15 @@ def config_json(context: AppContext) -> dict:
         "updatedisabled": c.update_disabled,
         "prerelease": c.update_prerelease,
         "password": (c.admin_password or "")[:10],
+        "username": c.admin_username,
+        "default_credentials": context.security.uses_default_credentials,
         "logging": c.tracing_enabled,
         "basepathoverride": c.base_path_override,
         "baseurloverride": c.base_url_override,
         "cache_enabled": c.cache_enabled,
         "cache_ttl": c.cache_ttl,
         "cache_max_results_per_indexer": c.cache_max_results_per_indexer,
+        "test_timeout": c.test_timeout,
         "flaresolverrurl": c.flaresolverr_url,
         "flaresolverr_maxtimeout": c.flaresolverr_max_timeout,
         "omdbkey": c.omdb_api_key,
@@ -189,13 +193,19 @@ def _clean_base_path(value: str | None) -> str | None:
 
 def _validate_network(payload: ServerConfigPayload) -> None:
     if payload.port in RESTRICTED_PORTS:
-        raise ValueError(
-            "The port you have selected is restricted, try a different one."
-        )
+        raise ValueError("That port is restricted. Choose another.")
     if not 1 <= payload.port <= 65535:
         raise ValueError(INVALID_PORT_MESSAGE)
     if not payload.local_bind_address.strip():
         raise ValueError("You need to provide a local bind address.")
+
+
+def _validate_test_timeout(payload: ServerConfigPayload) -> None:
+    if not MIN_TEST_TIMEOUT <= payload.test_timeout <= MAX_TEST_TIMEOUT:
+        raise ValueError(
+            f"The test timeout must be between {MIN_TEST_TIMEOUT} and "
+            f"{MAX_TEST_TIMEOUT} seconds."
+        )
 
 
 def _restart_needed(config, payload, base_path: str | None) -> bool:
@@ -257,6 +267,7 @@ def apply_server_config(
     """Validate and copy the payload; True if a restart is needed."""
     config = context.config
     _validate_network(payload)
+    _validate_test_timeout(payload)
     flare_url = _validated_flaresolverr(payload)
     blackhole = _validated_blackhole(payload)
     base_path = _clean_base_path(payload.basepathoverride)
@@ -268,6 +279,7 @@ def apply_server_config(
         context.cache.clean_cache()  # let the user test the new proxy
     _copy_network(config, payload)
     _copy_cache(config, payload)
+    config.test_timeout = payload.test_timeout
     _copy_integrations(config, payload)
     config.blackhole_dir = blackhole
     config.base_path_override, config.base_url_override = base_path, base_url

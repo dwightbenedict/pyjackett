@@ -5,10 +5,11 @@ from __future__ import annotations
 import json
 import xml.etree.ElementTree as ET
 
-import httpx
 import pytest
 from fastapi.testclient import TestClient
+from tests.conftest import sign_in_as_admin
 
+import fakes
 from pyjackett.app_context import build_context
 from pyjackett.server.app import create_app
 
@@ -36,19 +37,20 @@ API_RESPONSE = {
 }
 
 
-def handler(request: httpx.Request) -> httpx.Response:
+def handler(request: fakes.Request) -> fakes.Response:
     assert request.url.path == "/service/search"
-    return httpx.Response(200, text=json.dumps(API_RESPONSE))
+    return fakes.Response(200, text=json.dumps(API_RESPONSE))
 
 
 @pytest.fixture
 def client(tmp_path):
     context = build_context(
         tmp_path,
-        transport=httpx.MockTransport(handler),
+        client_factory=fakes.mock_network(handler),
         include_bundled=False,
     )
     with TestClient(create_app(context)) as test_client:
+        sign_in_as_admin(test_client)
         test_client.api_key = context.config.api_key
         yield test_client
 

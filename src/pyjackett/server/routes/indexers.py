@@ -10,23 +10,20 @@ from pyjackett.indexers.base import ConfigurationStatus
 from pyjackett.server.auth import require_dashboard_user
 from pyjackett.server.deps import Context
 from pyjackett.server.proxy_links import proxy_tracker_result
-from pyjackett.server.serialization import indexer_json, release_json
+from pyjackett.server.schemas import ERROR_RESPONSES, BulkOutcome, IndexerIds
+from pyjackett.server.serialization import release_json
 from pyjackett.server.urls import server_url
 
 router = APIRouter(
-    prefix="/api/v2.0/indexers", dependencies=[Depends(require_dashboard_user)]
+    prefix="/indexers",
+    tags=["indexers"],
+    dependencies=[Depends(require_dashboard_user)],
+    responses=ERROR_RESPONSES,
 )
 
 
-@router.get("")
-async def list_indexers(context: Context, configured: bool = False):
-    indexers = context.indexers.all_indexers()
-    if configured:
-        indexers = [i for i in indexers if i.is_configured]
-    return [indexer_json(i) for i in indexers]
-
-
-# declared before ``/{indexer_id}`` routes so "cache" is not an indexer id
+# the fixed paths are declared before the ``/{indexer_id}`` routes so that
+# "cache" and "bulk" are not taken for indexer ids
 @router.get("/cache")
 async def cached_results(request: Request, context: Context):
     url = server_url(context, request)
@@ -34,6 +31,53 @@ async def cached_results(request: Request, context: Context):
     for result in results:
         proxy_tracker_result(context, result, url)
     return [release_json(r) for r in results]
+
+
+@router.delete("/cache", status_code=204, summary="Clear the results cache")
+async def clear_cache(context: Context) -> None:
+    context.cache.clean_cache()
+
+
+@router.post(
+    "/bulk/add",
+    response_model=list[BulkOutcome],
+    summary="Add several public indexers with their defaults",
+)
+async def bulk_add(context: Context, body: IndexerIds):
+    return await context.bulk.add(body.ids)
+
+
+@router.post(
+    "/bulk/test",
+    response_model=list[BulkOutcome],
+    summary="Test several indexers at once",
+)
+async def bulk_test(context: Context, body: IndexerIds):
+    return await context.bulk.test(body.ids)
+
+
+@router.post(
+    "/bulk/delete",
+    response_model=list[BulkOutcome],
+    summary="Remove the configuration of several indexers",
+)
+async def bulk_delete(context: Context, body: IndexerIds):
+    return await context.bulk.delete(body.ids)
+
+
+@router.post(
+    "/{indexer_id}/add",
+    status_code=204,
+    summary="Add a public indexer with its default configuration",
+)
+async def add_indexer(context: Context, indexer_id: str) -> None:
+    """Indexers that need credentials answer 409: use ``/config``."""
+    context.indexers.add_indexer(indexer_id)
+
+
+@router.delete("/{indexer_id}/cache", status_code=204)
+async def clear_indexer_cache(context: Context, indexer_id: str) -> None:
+    context.cache.clean_indexer_cache(context.indexers.get_indexer(indexer_id))
 
 
 @router.get("/{indexer_id}/config")
@@ -61,18 +105,8 @@ async def update_config(request: Request, context: Context, indexer_id: str):
 @router.post("/{indexer_id}/test")
 async def test_indexer(context: Context, indexer_id: str):
     indexer = context.indexers.get_indexer(indexer_id)
-    try:
-        await context.indexers.test_indexer(indexer.id)
-    except Exception as error:
-        indexer.last_error = _describe(error)
-        raise
-    indexer.last_error = None
-    return Response(status_code=204)
-
-
-def _describe(error: Exception) -> str:
-    cause = error.__cause__
-    return f"{error}: {cause}" if cause else str(error)
+    await context.test_runner.run(indexer.id)
+    return {"latency_ms": context.stats.last_elapsed_ms(indexer.id)}
 
 
 @router.delete("/{indexer_id}")

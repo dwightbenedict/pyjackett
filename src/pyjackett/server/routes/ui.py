@@ -9,9 +9,12 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 
 from pyjackett.app_context import AppContext
 from pyjackett.config.paths import BUNDLED_WEB_DIR
-from pyjackett.server.auth import COOKIE_NAME, is_authenticated
+from pyjackett.server.auth import (
+    COOKIE_NAME,
+    is_authenticated,
+    set_session_cookie,
+)
 from pyjackett.server.deps import Context
-from pyjackett.services.security import SECONDS_PER_DAY, SESSION_DAYS
 
 router = APIRouter()
 BASE_PATH_PLACEHOLDER = "__BASE_PATH__"
@@ -32,13 +35,7 @@ def _redirect(context: AppContext, path: str) -> RedirectResponse:
 
 
 def _with_session(context: AppContext, response: RedirectResponse):
-    response.set_cookie(
-        COOKIE_NAME,
-        context.security.create_session_cookie(),
-        max_age=SESSION_DAYS * SECONDS_PER_DAY,
-        httponly=True,
-        samesite="lax",
-    )
+    set_session_cookie(response, context.security)
     return response
 
 
@@ -64,8 +61,9 @@ async def login_page(request: Request, context: Context):
 @router.post("/UI/Dashboard")
 async def login(request: Request, context: Context):
     form = parse_qs((await request.body()).decode("utf-8"))
+    username = (form.get("username") or [""])[0]
     password = (form.get("password") or [""])[0]
-    if context.security.check_authorised(password):
+    if context.security.check_credentials(username, password):
         return _with_session(context, _redirect(context, "/UI/Dashboard"))
     return _redirect(context, "/UI/Login?error=1")
 

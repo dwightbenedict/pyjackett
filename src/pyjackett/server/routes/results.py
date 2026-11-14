@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
+from collections.abc import AsyncIterator
 from datetime import UTC
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Request, Response
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 
 from pyjackett.core.exceptions import (
     IndexerError,
@@ -19,6 +21,16 @@ from pyjackett.core.tracker_result import TrackerCacheResult
 from pyjackett.indexers.base import BaseIndexer
 from pyjackett.indexers.manager import UnknownIndexerError
 from pyjackett.server import torznab_xml
+from pyjackett.server.api_docs import (
+    MANUAL_PARAMETERS,
+    NDJSON_RESPONSE,
+    PLAIN_ERRORS,
+    POTATO_PARAMETERS,
+    TORZNAB_PARAMETERS,
+    TORZNAB_RESPONSES,
+    IndexerId,
+    api_key_query,
+)
 from pyjackett.server.auth import has_valid_api_key
 from pyjackett.server.deps import Context
 from pyjackett.server.errors import GuardFailureError
@@ -28,6 +40,7 @@ from pyjackett.server.query_parsing import (
     potato_query,
     torznab_query,
 )
+from pyjackett.server.schemas import ManualSearchResponse, PotatoResponse
 from pyjackett.server.serialization import release_json
 from pyjackett.server.torznab_validation import validate_query
 from pyjackett.server.urls import server_url
@@ -35,9 +48,16 @@ from pyjackett.utils.clock import Stopwatch
 from pyjackett.utils.numbers import format_imdb_id
 
 logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/api/v2.0/indexers/{indexer_id}/results")
+router = APIRouter(
+    prefix="/indexers/{indexer_id}/results",
+    tags=["search"],
+    dependencies=[Depends(api_key_query)],
+)
+# the paths older Jackett setups still call, mounted without the API prefix
+legacy = APIRouter(include_in_schema=False)
 
 XML_TYPE = "application/xml; charset=utf-8"
+MANUAL_SEARCH_TIMEOUT = 30.0  # seconds before slow trackers are given up
 RSS_TYPE = "application/rss+xml; charset=utf-8"
 DEFAULT_RETRY_AFTER = 60
 
@@ -92,7 +112,7 @@ def authorized_indexer(errors):
     """Dependency: the configured indexer, or a GuardFailureError response."""
 
     def dependency(
-        request: Request, indexer_id: str, context: Context
+        request: Request, indexer_id: IndexerId, context: Context
     ) -> BaseIndexer:
         if not has_valid_api_key(context.security, request):
             raise GuardFailureError(errors.invalid_api_key())
@@ -175,8 +195,22 @@ def _too_many_requests(error: IndexerRateLimitedError) -> Response:
     return response
 
 
-@router.get("/torznab")
-@router.get("/torznab/{ignored:path}")
+@router.get(
+    "/torznab",
+    operation_id="searchTorznab",
+    summary="Search with the Torznab protocol",
+    description=(
+        "The endpoint for Sonarr, Radarr, Lidarr, Readarr and Prowlarr. "
+        "Add `/api` to the path if your client insists on it. "
+        "Releases link to this server (`/dl/...`), which fetches the "
+        "torrent for the client, so tracker credentials never leave it."
+    ),
+    responses=TORZNAB_RESPONSES,
+    openapi_extra={"parameters": TORZNAB_PARAMETERS},
+)
+@router.get("/torznab/{ignored:path}", include_in_schema=False)
+@legacy.get("/torznab/{indexer_id}")
+@legacy.get("/torznab/{indexer_id}/api")
 async def torznab(
     request: Request,
     context: Context,
@@ -238,8 +272,20 @@ def _potato_item(context, indexer, release, url) -> dict:
     }
 
 
-@router.get("/potato")
-@router.get("/potato/{ignored:path}")
+@router.get(
+    "/potato",
+    operation_id="searchTorrentPotato",
+    summary="Search movies with the TorrentPotato protocol",
+    description=(
+        "For CouchPotato-style clients. Only indexers with movie "
+        "categories answer (`potatoenabled` in the indexer listing)."
+    ),
+    response_model=PotatoResponse,
+    responses=PLAIN_ERRORS,
+    openapi_extra={"parameters": POTATO_PARAMETERS},
+)
+@router.get("/potato/{ignored:path}", include_in_schema=False)
+@legacy.get("/potato/{indexer_id}")
 async def potato(
     request: Request,
     context: Context,
@@ -283,9 +329,39 @@ def _selected_trackers(
     return [m for m in members if m.can_handle_query(query)]
 
 
+async def _as_completed(
+    searches: dict[asyncio.Task, BaseIndexer],
+) -> AsyncIterator[tuple[asyncio.Task, BaseIndexer]]:
+    """Yield each search as soon as it finishes.
+
+    Searches still running at the deadline are cancelled and yielded last,
+    so one slow tracker never holds back the results of the others.
+    """
+    loop = asyncio.get_running_loop()
+    deadline = loop.time() + MANUAL_SEARCH_TIMEOUT
+    pending = set(searches)
+    while pending:
+        done, pending = await asyncio.wait(
+            pending,
+            timeout=max(deadline - loop.time(), 0),
+            return_when=asyncio.FIRST_COMPLETED,
+        )
+        if not done:
+            break
+        for task in done:
+            yield task, searches[task]
+    for task in pending:
+        task.cancel()
+    await asyncio.gather(*pending, return_exceptions=True)
+    for task in pending:
+        yield task, searches[task]
+
+
 def _outcome_json(task: asyncio.Task, indexer: BaseIndexer) -> dict:
     """Status entry of one tracker in the manual search response."""
-    error = task.exception() if task.done() and not task.cancelled() else None
+    if task.cancelled():
+        return _failed_outcome(indexer, "Timed out")
+    error = task.exception()
     if error is None:
         result = task.result()
         return {
@@ -296,21 +372,24 @@ def _outcome_json(task: asyncio.Task, indexer: BaseIndexer) -> dict:
             "elapsed_ms": result.elapsed_ms,
             "error": None,
         }
+    return _failed_outcome(indexer, str(error))
+
+
+def _failed_outcome(indexer: BaseIndexer, message: str) -> dict:
     return {
         "id": indexer.id,
         "name": indexer.name,
         "status": "error",
         "results": 0,
         "elapsed_ms": 0,
-        "error": str(error),
+        "error": message,
     }
 
 
-@router.get("")
-async def manual_search(
-    request: Request, context: Context, indexer: PlainIndexer
-):
-    stopwatch = Stopwatch(context.clock)
+def _start_searches(
+    request: Request, indexer: BaseIndexer
+) -> tuple[TorznabQuery, dict[asyncio.Task, BaseIndexer]]:
+    """Start the selected trackers' searches in parallel."""
     query = manual_search_query(_manual_parameters(request))
     requested = [
         t for t in request.query_params.get("Tracker[]", "").split(",") if t
@@ -318,40 +397,120 @@ async def manual_search(
     trackers = _selected_trackers(indexer, requested, query)
     query.interactive_search = True
     is_meta = not requested or len(requested) > 1
-    tasks = [
-        asyncio.ensure_future(t.results_for_query(query, is_meta))
+    searches = {
+        asyncio.ensure_future(t.results_for_query(query, is_meta)): t
         for t in trackers
-    ]
-    await asyncio.gather(*tasks, return_exceptions=True)
-    url = server_url(context, request)
-    statuses = [
-        _outcome_json(t, i) for t, i in zip(tasks, trackers, strict=True)
-    ]
-    results = _collect_results(context, tasks, url)
-    _log_manual(trackers, query, len(results), stopwatch.elapsed_ms)
-    return JSONResponse({"indexers": statuses, "results": results})
+    }
+    return query, searches
 
 
-def _collect_results(context, tasks, url) -> list[dict]:
-    collected: list[TrackerCacheResult] = []
-    for task in tasks:
-        if task.exception() is not None:
-            continue
-        result = task.result()
-        for release in result.releases:
-            tracker = TrackerCacheResult.from_release(
-                release,
-                result.indexer.name,
-                result.indexer.id,
-                result.indexer.type,
-            )
-            proxy_tracker_result(context, tracker, url)
-            collected.append(tracker)
-    collected.sort(
+def _tracker_results(
+    context, task: asyncio.Task, url: str
+) -> list[TrackerCacheResult]:
+    """Releases of one finished search, newest first."""
+    if task.cancelled() or task.exception() is not None:
+        return []
+    result = task.result()
+    found: list[TrackerCacheResult] = []
+    for release in result.releases:
+        tracker = TrackerCacheResult.from_release(
+            release,
+            result.indexer.name,
+            result.indexer.id,
+            result.indexer.type,
+        )
+        proxy_tracker_result(context, tracker, url)
+        found.append(tracker)
+    return _newest_first(found)
+
+
+def _newest_first(
+    releases: list[TrackerCacheResult],
+) -> list[TrackerCacheResult]:
+    return sorted(
+        releases,
         key=lambda r: r.publish_date.timestamp() if r.publish_date else 0,
         reverse=True,
     )
-    return [release_json(r) for r in collected]
+
+
+@router.get(
+    "",
+    operation_id="searchAll",
+    response_model=ManualSearchResponse,
+    summary="Search and get every tracker's results as JSON",
+    description=(
+        "Searches the selected trackers in parallel and answers once they "
+        "all finished or after 30 seconds, whichever comes first. Trackers "
+        "that failed or timed out are reported in `indexers`; the others "
+        "still deliver their `results`. Use `/stream` to receive trackers "
+        "as they finish."
+    ),
+    responses=PLAIN_ERRORS,
+    openapi_extra={"parameters": MANUAL_PARAMETERS},
+)
+async def manual_search(
+    request: Request, context: Context, indexer: PlainIndexer
+):
+    stopwatch = Stopwatch(context.clock)
+    query, searches = _start_searches(request, indexer)
+    url = server_url(context, request)
+    statuses: list[dict] = []
+    found: list[TrackerCacheResult] = []
+    async for task, tracker in _as_completed(searches):
+        statuses.append(_outcome_json(task, tracker))
+        found += _tracker_results(context, task, url)
+    _log_manual(
+        list(searches.values()), query, len(found), stopwatch.elapsed_ms
+    )
+    return JSONResponse(
+        {
+            "indexers": statuses,
+            "results": [release_json(r) for r in _newest_first(found)],
+        }
+    )
+
+
+@router.get(
+    "/stream",
+    operation_id="searchStream",
+    summary="Search and receive each tracker's results as it finishes",
+    response_class=StreamingResponse,
+    responses={**NDJSON_RESPONSE, **PLAIN_ERRORS},
+    openapi_extra={"parameters": MANUAL_PARAMETERS},
+)
+async def manual_search_stream(
+    request: Request, context: Context, indexer: PlainIndexer
+):
+    """Newline-delimited JSON: one line per tracker, as it finishes."""
+    stopwatch = Stopwatch(context.clock)
+    query, searches = _start_searches(request, indexer)
+    url = server_url(context, request)
+
+    async def lines() -> AsyncIterator[str]:
+        count = 0
+        try:
+            async for task, tracker in _as_completed(searches):
+                found = _tracker_results(context, task, url)
+                count += len(found)
+                chunk = {
+                    "indexer": _outcome_json(task, tracker),
+                    "results": [release_json(r) for r in found],
+                }
+                yield json.dumps(chunk) + "\n"
+        finally:
+            for task in searches:
+                task.cancel()  # a client that went away stops the work
+        _log_manual(
+            list(searches.values()), query, count, stopwatch.elapsed_ms
+        )
+
+    # already encoded: gzip would hold lines back until the buffer fills
+    return StreamingResponse(
+        lines(),
+        media_type="application/x-ndjson",
+        headers={"Content-Encoding": "identity"},
+    )
 
 
 def _log_manual(trackers, query, count, elapsed) -> None:

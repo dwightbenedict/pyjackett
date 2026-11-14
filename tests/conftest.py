@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import httpx
 import pytest
 from fastapi.testclient import TestClient
 
+import fakes
 from pyjackett.app_context import build_context
 from pyjackett.server.app import create_app
 
@@ -34,15 +34,20 @@ DETAILS_PAGE = (
 UNSORTED_TORRENT = b"d4:name3:foo4:infod6:lengthi3eee"
 
 
-def fake_tracker(request: httpx.Request) -> httpx.Response:
+def fake_tracker(request: fakes.Request) -> fakes.Response:
     path = request.url.path
     if path == "/search":
-        return httpx.Response(200, text=SEARCH_PAGE)
+        return fakes.Response(200, text=SEARCH_PAGE)
     if path.startswith("/torrent/"):
-        return httpx.Response(200, text=DETAILS_PAGE)
+        return fakes.Response(200, text=DETAILS_PAGE)
     if path == "/file/1.torrent":
-        return httpx.Response(200, content=UNSORTED_TORRENT)
-    return httpx.Response(404)
+        return fakes.Response(200, content=UNSORTED_TORRENT)
+    return fakes.Response(404)
+
+
+def sign_in_as_admin(client: TestClient) -> None:
+    """Log in with the default credentials every fresh install starts with."""
+    client.post("/UI/Login", data={"username": "admin", "password": "admin"})
 
 
 @pytest.fixture
@@ -50,7 +55,7 @@ def context(tmp_path):
     return build_context(
         tmp_path,
         extra_definition_dirs=[FIXTURES],
-        transport=httpx.MockTransport(fake_tracker),
+        client_factory=fakes.mock_network(fake_tracker),
         include_bundled=False,
     )
 
@@ -58,6 +63,7 @@ def context(tmp_path):
 @pytest.fixture
 def client(context):
     with TestClient(create_app(context)) as test_client:
+        sign_in_as_admin(test_client)
         yield test_client
 
 
