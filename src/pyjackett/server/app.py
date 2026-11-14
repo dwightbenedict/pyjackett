@@ -104,7 +104,7 @@ def _finish_openapi(app: FastAPI) -> None:
 
     def openapi() -> dict:
         if app.openapi_schema is None:
-            finish_openapi(generate())
+            finish_openapi(generate(), API_PREFIX, JACKETT_API_PREFIX)
         return app.openapi_schema
 
     app.openapi = openapi

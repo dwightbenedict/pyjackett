@@ -315,24 +315,27 @@ def test_import_rejects_foreign_documents(client):
     assert reply.status_code == 400
 
 
-def test_openapi_documents_v1_only(client):
+def test_openapi_documents_v1_and_the_jackett_prefix(client):
     spec = client.get(f"{V1}/openapi.json").json()
     assert f"{V1}/indexers/{{indexer_id}}/results/torznab" in spec["paths"]
-    assert not [p for p in spec["paths"] if p.startswith("/api/v2.0")]
+    assert "/api/v2.0/indexers/{indexer_id}/results/torznab" in spec["paths"]
     assert "ErrorResponse" in spec["components"]["schemas"]
 
 
 def test_spec_covers_search_and_discovery_only(client):
     paths = client.get(f"{V1}/openapi.json").json()["paths"]
-    assert sorted(paths) == [
-        f"{V1}/categories",
-        f"{V1}/indexers",
-        f"{V1}/indexers/{{indexer_id}}/caps",
-        f"{V1}/indexers/{{indexer_id}}/results",
-        f"{V1}/indexers/{{indexer_id}}/results/potato",
-        f"{V1}/indexers/{{indexer_id}}/results/stream",
-        f"{V1}/indexers/{{indexer_id}}/results/torznab",
+    suffixes = [
+        "/categories",
+        "/indexers",
+        "/indexers/{indexer_id}/caps",
+        "/indexers/{indexer_id}/results",
+        "/indexers/{indexer_id}/results/potato",
+        "/indexers/{indexer_id}/results/stream",
+        "/indexers/{indexer_id}/results/torznab",
     ]
+    assert sorted(paths) == sorted(
+        f"{prefix}{s}" for prefix in (V1, "/api/v2.0") for s in suffixes
+    )
     # management stays reachable: the dashboard and scripts call it
     assert client.get(f"{V1}/server/config").status_code == 200
     assert client.get(f"{V1}/server/logs").status_code == 200

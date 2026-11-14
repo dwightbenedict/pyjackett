@@ -172,3 +172,21 @@ def test_documented_models_match_what_the_api_returns(client, api_key):
         "schemas"
     ]["Release"]["properties"]
     assert set(reply["results"][0]) == set(release_fields)
+
+
+def test_jackett_prefix_mirrors_every_v1_operation(spec):
+    v1 = {p.removeprefix(V1): p for p in spec["paths"] if p.startswith(V1)}
+    twins = {
+        p.removeprefix("/api/v2.0"): p
+        for p in spec["paths"]
+        if p.startswith("/api/v2.0")
+    }
+    assert v1 and set(twins) == set(v1)
+    for suffix, path in twins.items():
+        for method, operation in spec["paths"][path].items():
+            original = spec["paths"][v1[suffix]][method]
+            assert operation["tags"] == ["jackett"]
+            assert operation["operationId"] == (
+                f"{original['operationId']}Jackett"
+            )
+            assert operation["parameters"] == original["parameters"]

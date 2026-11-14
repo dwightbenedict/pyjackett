@@ -8,6 +8,7 @@ validation that the protocol does not have.
 
 from __future__ import annotations
 
+from copy import deepcopy
 from typing import Annotated, Any
 
 from fastapi import Path
@@ -49,8 +50,11 @@ indexers can be searched; `GET /indexers` lists what exists.
 
 ## Versioning
 
-This is version 1 of the API, served under `/api/v1`. Jackett's
-`/api/v2.0` paths keep working for existing clients but are not documented.
+This is version 1 of the API, served under `/api/v1`. Every search and
+discovery operation is also served, unchanged, under Jackett's `/api/v2.0`
+prefix, so Sonarr, Radarr, Prowlarr and other Jackett clients work with only
+a new base URL. Those operations are listed under the `jackett` tag, with
+operation ids ending in `Jackett`.
 Results are cached for a few minutes; pass `cache=false` to Torznab to
 bypass the cache.
 """
@@ -63,6 +67,11 @@ API_TAGS = [
         "name": "discovery",
         "description": "Find out which indexers exist and what they offer. "
         "Read-only.",
+    },
+    {
+        "name": "jackett",
+        "description": "The same operations under Jackett's `/api/v2.0` "
+        "prefix, for clients written against Jackett.",
     },
 ]
 
@@ -355,17 +364,50 @@ def _without_alias_parameter(operation: dict[str, Any]) -> None:
     ]
 
 
-def finish_openapi(spec: dict[str, Any]) -> dict[str, Any]:
+def _as_jackett(operation: dict[str, Any]) -> dict[str, Any]:
+    copy = deepcopy(operation)
+    copy["tags"] = ["jackett"]
+    copy["operationId"] = f"{operation['operationId']}Jackett"
+    return copy
+
+
+def add_jackett_paths(
+    spec: dict[str, Any], api_prefix: str, jackett_prefix: str
+) -> None:
+    """Document the Jackett-prefixed twin of every v1 operation.
+
+    The app serves both prefixes from the same routers, so the twins differ
+    only in path, tag and operation id.
+    """
+    paths = spec.get("paths", {})
+    for path, item in list(paths.items()):
+        if api_prefix not in path:
+            continue
+        twin = path.replace(api_prefix, jackett_prefix, 1)
+        paths[twin] = {
+            method: _as_jackett(operation)
+            for method, operation in item.items()
+        }
+
+
+def finish_openapi(
+    spec: dict[str, Any],
+    api_prefix: str = "/api/v1",
+    jackett_prefix: str = "/api/v2.0",
+) -> dict[str, Any]:
     """Remove what FastAPI generates but the API does not do.
 
     * the 422 of operations that can never answer it: the search handlers
       read their parameters themselves (see the module docstring) and a
       path string always validates, so it would only mislead generators;
-    * the ``ignored`` query parameter of the Torznab operation.
+    * the ``ignored`` query parameter of the Torznab operation;
+
+    and add the ``jackett`` twins of the v1 operations.
     """
     for operations in spec.get("paths", {}).values():
         for operation in operations.values():
             _without_alias_parameter(operation)
             if not _can_fail_validation(operation):
                 operation.get("responses", {}).pop("422", None)
+    add_jackett_paths(spec, api_prefix, jackett_prefix)
     return spec

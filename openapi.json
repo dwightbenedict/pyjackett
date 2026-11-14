@@ -1,0 +1,2774 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "PyJackett API",
+    "summary": "Search many torrent trackers through one Torznab API.",
+    "description": "PyJackett turns many torrent trackers into one search API. Point Sonarr,\nRadarr, Lidarr, Readarr or Prowlarr at the **Torznab** endpoint, or use the\nJSON endpoints from your own code.\n\n## Authentication\n\nEvery endpoint takes the server's API key in the `apikey` query parameter\n(`passkey` is accepted as an alias). The key is shown in the dashboard\nheader. The discovery endpoints also accept a dashboard session cookie.\n\n## Indexers\n\nAn *indexer* is one tracker, or a group of them. `all` searches every\nconfigured tracker; `tag:<name>`, `type:<name>`, `lang:<name>` and\n`status:<healthy|failing|unknown>` search a filtered group. Only configured\nindexers can be searched; `GET /indexers` lists what exists.\n\n## Errors\n\n* **Torznab** endpoints answer errors as an XML `<error code description>`\n  document, usually with HTTP 200, as the protocol requires. Check the body.\n* **JSON** search endpoints answer 401 (bad key, empty body) or 404 (unknown\n  or unconfigured indexer, plain text).\n* **Discovery** endpoints answer JSON: `{\"detail\": \"Unauthorized\"}` with 401\n  or `{\"result\": \"error\", \"error\": \"...\"}` with 404.\n* A tracker that fails or times out never fails a manual search: its entry\n  in `indexers` carries `status: \"error\"` and the reason.\n\n## Versioning\n\nThis is version 1 of the API, served under `/api/v1`. Every search and\ndiscovery operation is also served, unchanged, under Jackett's `/api/v2.0`\nprefix, so Sonarr, Radarr, Prowlarr and other Jackett clients work with only\na new base URL. Those operations are listed under the `jackett` tag, with\noperation ids ending in `Jackett`.\nResults are cached for a few minutes; pass `cache=false` to Torznab to\nbypass the cache.\n",
+    "license": {
+      "name": "GPL-2.0-only",
+      "identifier": "GPL-2.0-only"
+    },
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/api/v1/indexers/{indexer_id}/results/torznab": {
+      "get": {
+        "tags": [
+          "search"
+        ],
+        "summary": "Search with the Torznab protocol",
+        "description": "The endpoint for Sonarr, Radarr, Lidarr, Readarr and Prowlarr. Add `/api` to the path if your client insists on it. Releases link to this server (`/dl/...`), which fetches the torrent for the client, so tracker credentials never leave it.",
+        "operationId": "searchTorznab",
+        "security": [
+          {
+            "ApiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "indexer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Indexer id, e.g. `torrentscsv`, or `all` / a filter such as `tag:anime` to search several trackers at once.",
+              "examples": [
+                "all"
+              ],
+              "title": "Indexer Id"
+            },
+            "description": "Indexer id, e.g. `torrentscsv`, or `all` / a filter such as `tag:anime` to search several trackers at once."
+          },
+          {
+            "name": "t",
+            "in": "query",
+            "required": false,
+            "description": "The function. `caps` describes the indexer, `indexers` lists the members of a meta indexer, the rest search. Defaults to `search`.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "caps",
+                "search",
+                "tvsearch",
+                "movie",
+                "music",
+                "book",
+                "indexers"
+              ],
+              "default": "search"
+            },
+            "example": "search"
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Free text to search for.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "big movie"
+          },
+          {
+            "name": "cat",
+            "in": "query",
+            "required": false,
+            "description": "Comma separated Torznab category ids; see `GET /categories`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "2000,5000"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Maximum number of releases.",
+            "schema": {
+              "type": "integer"
+            },
+            "example": 50
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "description": "Skip this many releases; only for trackers with pagination.",
+            "schema": {
+              "type": "integer"
+            },
+            "example": 0
+          },
+          {
+            "name": "extended",
+            "in": "query",
+            "required": false,
+            "description": "`1` adds the attributes of the extended Torznab feed.",
+            "schema": {
+              "type": "integer",
+              "enum": [
+                0,
+                1
+              ]
+            }
+          },
+          {
+            "name": "cache",
+            "in": "query",
+            "required": false,
+            "description": "`false` skips the results cache for this request.",
+            "schema": {
+              "type": "boolean",
+              "default": true
+            }
+          },
+          {
+            "name": "season",
+            "in": "query",
+            "required": false,
+            "description": "Season number (`t=tvsearch`).",
+            "schema": {
+              "type": "integer"
+            },
+            "example": 1
+          },
+          {
+            "name": "ep",
+            "in": "query",
+            "required": false,
+            "description": "Episode number (`t=tvsearch`).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "2"
+          },
+          {
+            "name": "imdbid",
+            "in": "query",
+            "required": false,
+            "description": "IMDb id, with or without the `tt` prefix.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "tt0133093"
+          },
+          {
+            "name": "tvdbid",
+            "in": "query",
+            "required": false,
+            "description": "TheTVDB id.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "rid",
+            "in": "query",
+            "required": false,
+            "description": "TVRage id.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "tmdbid",
+            "in": "query",
+            "required": false,
+            "description": "TMDb id.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "tvmazeid",
+            "in": "query",
+            "required": false,
+            "description": "TVmaze id.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "traktid",
+            "in": "query",
+            "required": false,
+            "description": "Trakt id.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "doubanid",
+            "in": "query",
+            "required": false,
+            "description": "Douban id.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "year",
+            "in": "query",
+            "required": false,
+            "description": "Release year.",
+            "schema": {
+              "type": "integer"
+            },
+            "example": 2020
+          },
+          {
+            "name": "genre",
+            "in": "query",
+            "required": false,
+            "description": "Genre.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "album",
+            "in": "query",
+            "required": false,
+            "description": "Album (`t=music`).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "artist",
+            "in": "query",
+            "required": false,
+            "description": "Artist (`t=music`).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "label",
+            "in": "query",
+            "required": false,
+            "description": "Label (`t=music`).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "track",
+            "in": "query",
+            "required": false,
+            "description": "Track (`t=music`).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "title",
+            "in": "query",
+            "required": false,
+            "description": "Book title (`t=book`).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "author",
+            "in": "query",
+            "required": false,
+            "description": "Author (`t=book`).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "publisher",
+            "in": "query",
+            "required": false,
+            "description": "Publisher (`t=book`).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "configured",
+            "in": "query",
+            "required": false,
+            "description": "With `t=indexers` on a meta indexer: only list configured (`true`) or unconfigured (`false`) members.",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The results feed, the capabilities document or, for protocol errors such as a bad key, an `<error>` document.",
+            "content": {
+              "application/json": {
+                "schema": {}
+              },
+              "application/rss+xml": {
+                "schema": {
+                  "type": "string",
+                  "format": "xml"
+                },
+                "example": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<rss version=\"2.0\" xmlns:torznab=\"http://torznab.com/schemas/2015/feed\">\n  <channel>\n    <title>Fake Tracker</title>\n    <item>\n      <title>Big Movie 2020 1080p</title>\n      <guid>https://tracker.example/details/1</guid>\n      <size>1610612736</size>\n      <link>http://pyjackett:9117/dl/faketracker/?path=...&amp;file=Big+Movie</link>\n      <pubDate>Fri, 01 Mar 2024 12:00:00 +0000</pubDate>\n      <torznab:attr name=\"seeders\" value=\"42\"/>\n      <torznab:attr name=\"peers\" value=\"49\"/>\n      <torznab:attr name=\"category\" value=\"2040\"/>\n    </item>\n  </channel>\n</rss>\n"
+              },
+              "application/xml": {
+                "schema": {
+                  "type": "string",
+                  "format": "xml"
+                },
+                "examples": {
+                  "caps": {
+                    "summary": "t=caps",
+                    "value": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<caps>\n  <server title=\"Fake Tracker\"/>\n  <limits default=\"100\" max=\"100\"/>\n  <searching>\n    <search available=\"yes\" supportedParams=\"q\"/>\n    <tv-search available=\"yes\" supportedParams=\"q,season,ep\"/>\n  </searching>\n  <categories>\n    <category id=\"2000\" name=\"Movies\"/>\n  </categories>\n</caps>\n"
+                  },
+                  "error": {
+                    "summary": "Protocol error",
+                    "value": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<error code=\"100\" description=\"Invalid API Key\"/>\n"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A request parameter is invalid (XML `<error>`).",
+            "content": {
+              "application/xml": {
+                "schema": {
+                  "type": "string",
+                  "format": "xml"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The tracker asked to slow down (XML `<error>`).",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait before trying again.",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/xml": {
+                "schema": {
+                  "type": "string",
+                  "format": "xml"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/indexers/{indexer_id}/results/potato": {
+      "get": {
+        "tags": [
+          "search"
+        ],
+        "summary": "Search movies with the TorrentPotato protocol",
+        "description": "For CouchPotato-style clients. Only indexers with movie categories answer (`potatoenabled` in the indexer listing).",
+        "operationId": "searchTorrentPotato",
+        "security": [
+          {
+            "ApiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "indexer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Indexer id, e.g. `torrentscsv`, or `all` / a filter such as `tag:anime` to search several trackers at once.",
+              "examples": [
+                "all"
+              ],
+              "title": "Indexer Id"
+            },
+            "description": "Indexer id, e.g. `torrentscsv`, or `all` / a filter such as `tag:anime` to search several trackers at once."
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "description": "Movie title to search for.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "big movie"
+          },
+          {
+            "name": "imdbid",
+            "in": "query",
+            "required": false,
+            "description": "IMDb id, with or without the `tt` prefix.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "tt0133093"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PotatoResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or wrong API key. Empty body."
+          },
+          "404": {
+            "description": "The indexer is unknown, not configured, or cannot handle the query.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/indexers/{indexer_id}/results": {
+      "get": {
+        "tags": [
+          "search"
+        ],
+        "summary": "Search and get every tracker's results as JSON",
+        "description": "Searches the selected trackers in parallel and answers once they all finished or after 30 seconds, whichever comes first. Trackers that failed or timed out are reported in `indexers`; the others still deliver their `results`. Use `/stream` to receive trackers as they finish.",
+        "operationId": "searchAll",
+        "security": [
+          {
+            "ApiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "indexer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Indexer id, e.g. `torrentscsv`, or `all` / a filter such as `tag:anime` to search several trackers at once.",
+              "examples": [
+                "all"
+              ],
+              "title": "Indexer Id"
+            },
+            "description": "Indexer id, e.g. `torrentscsv`, or `all` / a filter such as `tag:anime` to search several trackers at once."
+          },
+          {
+            "name": "query",
+            "in": "query",
+            "required": false,
+            "description": "Text to search for. A trailing `S01E02`, `E02` or `S01` selects a season and episode; `tt1234567` alone is an IMDb lookup.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "Other Show S01E01"
+          },
+          {
+            "name": "Category[]",
+            "in": "query",
+            "required": false,
+            "description": "Comma separated Torznab category ids.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "5000,5040"
+          },
+          {
+            "name": "Tracker[]",
+            "in": "query",
+            "required": false,
+            "description": "Comma separated indexer ids to search; default is all members.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "torrentscsv,faketracker"
+          },
+          {
+            "name": "imdbid",
+            "in": "query",
+            "required": false,
+            "description": "IMDb id.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "tt0133093"
+          },
+          {
+            "name": "tmdbid",
+            "in": "query",
+            "required": false,
+            "description": "External id.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "tvdbid",
+            "in": "query",
+            "required": false,
+            "description": "External id.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "tvmazeid",
+            "in": "query",
+            "required": false,
+            "description": "External id.",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManualSearchResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or wrong API key. Empty body."
+          },
+          "404": {
+            "description": "The indexer is unknown, not configured, or cannot handle the query.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/indexers/{indexer_id}/results/stream": {
+      "get": {
+        "tags": [
+          "search"
+        ],
+        "summary": "Search and receive each tracker's results as it finishes",
+        "description": "Newline-delimited JSON: one line per tracker, as it finishes.",
+        "operationId": "searchStream",
+        "security": [
+          {
+            "ApiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "indexer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Indexer id, e.g. `torrentscsv`, or `all` / a filter such as `tag:anime` to search several trackers at once.",
+              "examples": [
+                "all"
+              ],
+              "title": "Indexer Id"
+            },
+            "description": "Indexer id, e.g. `torrentscsv`, or `all` / a filter such as `tag:anime` to search several trackers at once."
+          },
+          {
+            "name": "query",
+            "in": "query",
+            "required": false,
+            "description": "Text to search for. A trailing `S01E02`, `E02` or `S01` selects a season and episode; `tt1234567` alone is an IMDb lookup.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "Other Show S01E01"
+          },
+          {
+            "name": "Category[]",
+            "in": "query",
+            "required": false,
+            "description": "Comma separated Torznab category ids.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "5000,5040"
+          },
+          {
+            "name": "Tracker[]",
+            "in": "query",
+            "required": false,
+            "description": "Comma separated indexer ids to search; default is all members.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "torrentscsv,faketracker"
+          },
+          {
+            "name": "imdbid",
+            "in": "query",
+            "required": false,
+            "description": "IMDb id.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "tt0133093"
+          },
+          {
+            "name": "tmdbid",
+            "in": "query",
+            "required": false,
+            "description": "External id.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "tvdbid",
+            "in": "query",
+            "required": false,
+            "description": "External id.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "tvmazeid",
+            "in": "query",
+            "required": false,
+            "description": "External id.",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "One JSON object per line, emitted as soon as a tracker finishes: `indexer` is its outcome (see `indexers` of the plain search) and `results` its releases.",
+            "content": {
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "{\"indexer\": {\"id\": \"faketracker\", \"name\": \"Fake Tracker\", \"status\": \"ok\", \"results\": 2, \"elapsed_ms\": 120, \"error\": null}, \"results\": []}\n"
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or wrong API key. Empty body."
+          },
+          "404": {
+            "description": "The indexer is unknown, not configured, or cannot handle the query.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/indexers": {
+      "get": {
+        "tags": [
+          "discovery"
+        ],
+        "summary": "List the available indexers",
+        "description": "Every definition PyJackett knows, configured or not, filterable.",
+        "operationId": "listIndexers",
+        "security": [
+          {
+            "ApiKey": []
+          },
+          {
+            "DashboardSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "configured",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only configured (`true`) or unconfigured ones.",
+              "title": "Configured"
+            },
+            "description": "Only configured (`true`) or unconfigured ones."
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "`public`, `semi-public` or `private`.",
+              "title": "Type"
+            },
+            "description": "`public`, `semi-public` or `private`."
+          },
+          {
+            "name": "language",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Language prefix, e.g. `en` or `en-US`.",
+              "title": "Language"
+            },
+            "description": "Language prefix, e.g. `en` or `en-US`."
+          },
+          {
+            "name": "tag",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only indexers with this tag.",
+              "title": "Tag"
+            },
+            "description": "Only indexers with this tag."
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Part of the name or id, ignoring case.",
+              "title": "Q"
+            },
+            "description": "Part of the name or id, ignoring case."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/IndexerSummary"
+                  },
+                  "title": "Response Listindexers"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or wrong API key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Detail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/indexers/{indexer_id}/caps": {
+      "get": {
+        "tags": [
+          "discovery"
+        ],
+        "summary": "What an indexer can search for",
+        "description": "The same information as Torznab `t=caps`, as JSON.\n\nMeta indexers such as `all` report the union of their members.",
+        "operationId": "getIndexerCapabilities",
+        "security": [
+          {
+            "ApiKey": []
+          },
+          {
+            "DashboardSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "indexer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Indexer id, e.g. `torrentscsv`, or `all` / a filter such as `tag:anime` to search several trackers at once.",
+              "examples": [
+                "all"
+              ],
+              "title": "Indexer Id"
+            },
+            "description": "Indexer id, e.g. `torrentscsv`, or `all` / a filter such as `tag:anime` to search several trackers at once."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Capabilities"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or wrong API key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Detail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown indexer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/categories": {
+      "get": {
+        "tags": [
+          "discovery"
+        ],
+        "summary": "The standard Torznab categories",
+        "description": "The category ids accepted by the `cat` parameter, as a tree.",
+        "operationId": "listCategories",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Category"
+                  },
+                  "type": "array",
+                  "title": "Response Listcategories"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or wrong API key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Detail"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKey": []
+          },
+          {
+            "DashboardSession": []
+          }
+        ],
+        "parameters": []
+      }
+    },
+    "/api/v2.0/indexers/{indexer_id}/results/torznab": {
+      "get": {
+        "tags": [
+          "jackett"
+        ],
+        "summary": "Search with the Torznab protocol",
+        "description": "The endpoint for Sonarr, Radarr, Lidarr, Readarr and Prowlarr. Add `/api` to the path if your client insists on it. Releases link to this server (`/dl/...`), which fetches the torrent for the client, so tracker credentials never leave it.",
+        "operationId": "searchTorznabJackett",
+        "security": [
+          {
+            "ApiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "indexer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Indexer id, e.g. `torrentscsv`, or `all` / a filter such as `tag:anime` to search several trackers at once.",
+              "examples": [
+                "all"
+              ],
+              "title": "Indexer Id"
+            },
+            "description": "Indexer id, e.g. `torrentscsv`, or `all` / a filter such as `tag:anime` to search several trackers at once."
+          },
+          {
+            "name": "t",
+            "in": "query",
+            "required": false,
+            "description": "The function. `caps` describes the indexer, `indexers` lists the members of a meta indexer, the rest search. Defaults to `search`.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "caps",
+                "search",
+                "tvsearch",
+                "movie",
+                "music",
+                "book",
+                "indexers"
+              ],
+              "default": "search"
+            },
+            "example": "search"
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Free text to search for.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "big movie"
+          },
+          {
+            "name": "cat",
+            "in": "query",
+            "required": false,
+            "description": "Comma separated Torznab category ids; see `GET /categories`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "2000,5000"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Maximum number of releases.",
+            "schema": {
+              "type": "integer"
+            },
+            "example": 50
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "description": "Skip this many releases; only for trackers with pagination.",
+            "schema": {
+              "type": "integer"
+            },
+            "example": 0
+          },
+          {
+            "name": "extended",
+            "in": "query",
+            "required": false,
+            "description": "`1` adds the attributes of the extended Torznab feed.",
+            "schema": {
+              "type": "integer",
+              "enum": [
+                0,
+                1
+              ]
+            }
+          },
+          {
+            "name": "cache",
+            "in": "query",
+            "required": false,
+            "description": "`false` skips the results cache for this request.",
+            "schema": {
+              "type": "boolean",
+              "default": true
+            }
+          },
+          {
+            "name": "season",
+            "in": "query",
+            "required": false,
+            "description": "Season number (`t=tvsearch`).",
+            "schema": {
+              "type": "integer"
+            },
+            "example": 1
+          },
+          {
+            "name": "ep",
+            "in": "query",
+            "required": false,
+            "description": "Episode number (`t=tvsearch`).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "2"
+          },
+          {
+            "name": "imdbid",
+            "in": "query",
+            "required": false,
+            "description": "IMDb id, with or without the `tt` prefix.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "tt0133093"
+          },
+          {
+            "name": "tvdbid",
+            "in": "query",
+            "required": false,
+            "description": "TheTVDB id.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "rid",
+            "in": "query",
+            "required": false,
+            "description": "TVRage id.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "tmdbid",
+            "in": "query",
+            "required": false,
+            "description": "TMDb id.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "tvmazeid",
+            "in": "query",
+            "required": false,
+            "description": "TVmaze id.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "traktid",
+            "in": "query",
+            "required": false,
+            "description": "Trakt id.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "doubanid",
+            "in": "query",
+            "required": false,
+            "description": "Douban id.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "year",
+            "in": "query",
+            "required": false,
+            "description": "Release year.",
+            "schema": {
+              "type": "integer"
+            },
+            "example": 2020
+          },
+          {
+            "name": "genre",
+            "in": "query",
+            "required": false,
+            "description": "Genre.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "album",
+            "in": "query",
+            "required": false,
+            "description": "Album (`t=music`).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "artist",
+            "in": "query",
+            "required": false,
+            "description": "Artist (`t=music`).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "label",
+            "in": "query",
+            "required": false,
+            "description": "Label (`t=music`).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "track",
+            "in": "query",
+            "required": false,
+            "description": "Track (`t=music`).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "title",
+            "in": "query",
+            "required": false,
+            "description": "Book title (`t=book`).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "author",
+            "in": "query",
+            "required": false,
+            "description": "Author (`t=book`).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "publisher",
+            "in": "query",
+            "required": false,
+            "description": "Publisher (`t=book`).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "configured",
+            "in": "query",
+            "required": false,
+            "description": "With `t=indexers` on a meta indexer: only list configured (`true`) or unconfigured (`false`) members.",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The results feed, the capabilities document or, for protocol errors such as a bad key, an `<error>` document.",
+            "content": {
+              "application/json": {
+                "schema": {}
+              },
+              "application/rss+xml": {
+                "schema": {
+                  "type": "string",
+                  "format": "xml"
+                },
+                "example": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<rss version=\"2.0\" xmlns:torznab=\"http://torznab.com/schemas/2015/feed\">\n  <channel>\n    <title>Fake Tracker</title>\n    <item>\n      <title>Big Movie 2020 1080p</title>\n      <guid>https://tracker.example/details/1</guid>\n      <size>1610612736</size>\n      <link>http://pyjackett:9117/dl/faketracker/?path=...&amp;file=Big+Movie</link>\n      <pubDate>Fri, 01 Mar 2024 12:00:00 +0000</pubDate>\n      <torznab:attr name=\"seeders\" value=\"42\"/>\n      <torznab:attr name=\"peers\" value=\"49\"/>\n      <torznab:attr name=\"category\" value=\"2040\"/>\n    </item>\n  </channel>\n</rss>\n"
+              },
+              "application/xml": {
+                "schema": {
+                  "type": "string",
+                  "format": "xml"
+                },
+                "examples": {
+                  "caps": {
+                    "summary": "t=caps",
+                    "value": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<caps>\n  <server title=\"Fake Tracker\"/>\n  <limits default=\"100\" max=\"100\"/>\n  <searching>\n    <search available=\"yes\" supportedParams=\"q\"/>\n    <tv-search available=\"yes\" supportedParams=\"q,season,ep\"/>\n  </searching>\n  <categories>\n    <category id=\"2000\" name=\"Movies\"/>\n  </categories>\n</caps>\n"
+                  },
+                  "error": {
+                    "summary": "Protocol error",
+                    "value": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<error code=\"100\" description=\"Invalid API Key\"/>\n"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A request parameter is invalid (XML `<error>`).",
+            "content": {
+              "application/xml": {
+                "schema": {
+                  "type": "string",
+                  "format": "xml"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The tracker asked to slow down (XML `<error>`).",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait before trying again.",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/xml": {
+                "schema": {
+                  "type": "string",
+                  "format": "xml"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2.0/indexers/{indexer_id}/results/potato": {
+      "get": {
+        "tags": [
+          "jackett"
+        ],
+        "summary": "Search movies with the TorrentPotato protocol",
+        "description": "For CouchPotato-style clients. Only indexers with movie categories answer (`potatoenabled` in the indexer listing).",
+        "operationId": "searchTorrentPotatoJackett",
+        "security": [
+          {
+            "ApiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "indexer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Indexer id, e.g. `torrentscsv`, or `all` / a filter such as `tag:anime` to search several trackers at once.",
+              "examples": [
+                "all"
+              ],
+              "title": "Indexer Id"
+            },
+            "description": "Indexer id, e.g. `torrentscsv`, or `all` / a filter such as `tag:anime` to search several trackers at once."
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "description": "Movie title to search for.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "big movie"
+          },
+          {
+            "name": "imdbid",
+            "in": "query",
+            "required": false,
+            "description": "IMDb id, with or without the `tt` prefix.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "tt0133093"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PotatoResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or wrong API key. Empty body."
+          },
+          "404": {
+            "description": "The indexer is unknown, not configured, or cannot handle the query.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2.0/indexers/{indexer_id}/results": {
+      "get": {
+        "tags": [
+          "jackett"
+        ],
+        "summary": "Search and get every tracker's results as JSON",
+        "description": "Searches the selected trackers in parallel and answers once they all finished or after 30 seconds, whichever comes first. Trackers that failed or timed out are reported in `indexers`; the others still deliver their `results`. Use `/stream` to receive trackers as they finish.",
+        "operationId": "searchAllJackett",
+        "security": [
+          {
+            "ApiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "indexer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Indexer id, e.g. `torrentscsv`, or `all` / a filter such as `tag:anime` to search several trackers at once.",
+              "examples": [
+                "all"
+              ],
+              "title": "Indexer Id"
+            },
+            "description": "Indexer id, e.g. `torrentscsv`, or `all` / a filter such as `tag:anime` to search several trackers at once."
+          },
+          {
+            "name": "query",
+            "in": "query",
+            "required": false,
+            "description": "Text to search for. A trailing `S01E02`, `E02` or `S01` selects a season and episode; `tt1234567` alone is an IMDb lookup.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "Other Show S01E01"
+          },
+          {
+            "name": "Category[]",
+            "in": "query",
+            "required": false,
+            "description": "Comma separated Torznab category ids.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "5000,5040"
+          },
+          {
+            "name": "Tracker[]",
+            "in": "query",
+            "required": false,
+            "description": "Comma separated indexer ids to search; default is all members.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "torrentscsv,faketracker"
+          },
+          {
+            "name": "imdbid",
+            "in": "query",
+            "required": false,
+            "description": "IMDb id.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "tt0133093"
+          },
+          {
+            "name": "tmdbid",
+            "in": "query",
+            "required": false,
+            "description": "External id.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "tvdbid",
+            "in": "query",
+            "required": false,
+            "description": "External id.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "tvmazeid",
+            "in": "query",
+            "required": false,
+            "description": "External id.",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManualSearchResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or wrong API key. Empty body."
+          },
+          "404": {
+            "description": "The indexer is unknown, not configured, or cannot handle the query.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2.0/indexers/{indexer_id}/results/stream": {
+      "get": {
+        "tags": [
+          "jackett"
+        ],
+        "summary": "Search and receive each tracker's results as it finishes",
+        "description": "Newline-delimited JSON: one line per tracker, as it finishes.",
+        "operationId": "searchStreamJackett",
+        "security": [
+          {
+            "ApiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "indexer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Indexer id, e.g. `torrentscsv`, or `all` / a filter such as `tag:anime` to search several trackers at once.",
+              "examples": [
+                "all"
+              ],
+              "title": "Indexer Id"
+            },
+            "description": "Indexer id, e.g. `torrentscsv`, or `all` / a filter such as `tag:anime` to search several trackers at once."
+          },
+          {
+            "name": "query",
+            "in": "query",
+            "required": false,
+            "description": "Text to search for. A trailing `S01E02`, `E02` or `S01` selects a season and episode; `tt1234567` alone is an IMDb lookup.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "Other Show S01E01"
+          },
+          {
+            "name": "Category[]",
+            "in": "query",
+            "required": false,
+            "description": "Comma separated Torznab category ids.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "5000,5040"
+          },
+          {
+            "name": "Tracker[]",
+            "in": "query",
+            "required": false,
+            "description": "Comma separated indexer ids to search; default is all members.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "torrentscsv,faketracker"
+          },
+          {
+            "name": "imdbid",
+            "in": "query",
+            "required": false,
+            "description": "IMDb id.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "tt0133093"
+          },
+          {
+            "name": "tmdbid",
+            "in": "query",
+            "required": false,
+            "description": "External id.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "tvdbid",
+            "in": "query",
+            "required": false,
+            "description": "External id.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "tvmazeid",
+            "in": "query",
+            "required": false,
+            "description": "External id.",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "One JSON object per line, emitted as soon as a tracker finishes: `indexer` is its outcome (see `indexers` of the plain search) and `results` its releases.",
+            "content": {
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "{\"indexer\": {\"id\": \"faketracker\", \"name\": \"Fake Tracker\", \"status\": \"ok\", \"results\": 2, \"elapsed_ms\": 120, \"error\": null}, \"results\": []}\n"
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or wrong API key. Empty body."
+          },
+          "404": {
+            "description": "The indexer is unknown, not configured, or cannot handle the query.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2.0/indexers": {
+      "get": {
+        "tags": [
+          "jackett"
+        ],
+        "summary": "List the available indexers",
+        "description": "Every definition PyJackett knows, configured or not, filterable.",
+        "operationId": "listIndexersJackett",
+        "security": [
+          {
+            "ApiKey": []
+          },
+          {
+            "DashboardSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "configured",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only configured (`true`) or unconfigured ones.",
+              "title": "Configured"
+            },
+            "description": "Only configured (`true`) or unconfigured ones."
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "`public`, `semi-public` or `private`.",
+              "title": "Type"
+            },
+            "description": "`public`, `semi-public` or `private`."
+          },
+          {
+            "name": "language",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Language prefix, e.g. `en` or `en-US`.",
+              "title": "Language"
+            },
+            "description": "Language prefix, e.g. `en` or `en-US`."
+          },
+          {
+            "name": "tag",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only indexers with this tag.",
+              "title": "Tag"
+            },
+            "description": "Only indexers with this tag."
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Part of the name or id, ignoring case.",
+              "title": "Q"
+            },
+            "description": "Part of the name or id, ignoring case."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/IndexerSummary"
+                  },
+                  "title": "Response Listindexers"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or wrong API key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Detail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2.0/indexers/{indexer_id}/caps": {
+      "get": {
+        "tags": [
+          "jackett"
+        ],
+        "summary": "What an indexer can search for",
+        "description": "The same information as Torznab `t=caps`, as JSON.\n\nMeta indexers such as `all` report the union of their members.",
+        "operationId": "getIndexerCapabilitiesJackett",
+        "security": [
+          {
+            "ApiKey": []
+          },
+          {
+            "DashboardSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "indexer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Indexer id, e.g. `torrentscsv`, or `all` / a filter such as `tag:anime` to search several trackers at once.",
+              "examples": [
+                "all"
+              ],
+              "title": "Indexer Id"
+            },
+            "description": "Indexer id, e.g. `torrentscsv`, or `all` / a filter such as `tag:anime` to search several trackers at once."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Capabilities"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or wrong API key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Detail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown indexer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2.0/categories": {
+      "get": {
+        "tags": [
+          "jackett"
+        ],
+        "summary": "The standard Torznab categories",
+        "description": "The category ids accepted by the `cat` parameter, as a tree.",
+        "operationId": "listCategoriesJackett",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Category"
+                  },
+                  "type": "array",
+                  "title": "Response Listcategories"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or wrong API key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Detail"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKey": []
+          },
+          {
+            "DashboardSession": []
+          }
+        ],
+        "parameters": []
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Capabilities": {
+        "properties": {
+          "limits": {
+            "$ref": "#/components/schemas/Limits"
+          },
+          "supports_raw_search": {
+            "type": "boolean",
+            "title": "Supports Raw Search"
+          },
+          "search_modes": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/SearchModeCapability"
+            },
+            "type": "object",
+            "title": "Search Modes",
+            "description": "Keyed by search, tv-search, movie-search, music-search and book-search."
+          },
+          "categories": {
+            "items": {
+              "$ref": "#/components/schemas/Category"
+            },
+            "type": "array",
+            "title": "Categories"
+          }
+        },
+        "type": "object",
+        "required": [
+          "limits",
+          "supports_raw_search",
+          "search_modes",
+          "categories"
+        ],
+        "title": "Capabilities",
+        "description": "The ``t=caps`` document as JSON."
+      },
+      "Category": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id",
+            "examples": [
+              2000
+            ]
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "examples": [
+              "Movies"
+            ]
+          },
+          "subcategories": {
+            "items": {
+              "$ref": "#/components/schemas/Category"
+            },
+            "type": "array",
+            "title": "Subcategories"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "subcategories"
+        ],
+        "title": "Category"
+      },
+      "CategoryRef": {
+        "properties": {
+          "ID": {
+            "type": "string",
+            "title": "Id"
+          },
+          "Name": {
+            "type": "string",
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ID",
+          "Name"
+        ],
+        "title": "CategoryRef"
+      },
+      "Detail": {
+        "properties": {
+          "detail": {
+            "type": "string",
+            "title": "Detail",
+            "default": "Unauthorized"
+          }
+        },
+        "type": "object",
+        "title": "Detail",
+        "description": "Body of a 401 from the discovery API."
+      },
+      "ErrorResponse": {
+        "properties": {
+          "result": {
+            "type": "string",
+            "title": "Result",
+            "default": "error"
+          },
+          "error": {
+            "type": "string",
+            "title": "Error"
+          },
+          "stacktrace": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stacktrace"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "title": "ErrorResponse",
+        "description": "Body of every failed management API call."
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "IndexerSummary": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "examples": [
+              "torrentscsv"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Type",
+            "description": "public, semi-public or private."
+          },
+          "configured": {
+            "type": "boolean",
+            "title": "Configured",
+            "description": "Only configured ones can search."
+          },
+          "site_link": {
+            "type": "string",
+            "title": "Site Link"
+          },
+          "alternativesitelinks": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Alternativesitelinks"
+          },
+          "language": {
+            "type": "string",
+            "title": "Language",
+            "examples": [
+              "en-US"
+            ]
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tags"
+          },
+          "last_error": {
+            "type": "string",
+            "title": "Last Error",
+            "description": "Empty when the last test passed."
+          },
+          "potatoenabled": {
+            "type": "boolean",
+            "title": "Potatoenabled",
+            "description": "Whether the TorrentPotato endpoint can be used."
+          },
+          "healthy": {
+            "type": "boolean",
+            "title": "Healthy",
+            "description": "Answered recently without errors."
+          },
+          "failing": {
+            "type": "boolean",
+            "title": "Failing",
+            "description": "Failed recently; retried with back-off."
+          },
+          "latency_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latency Ms",
+            "description": "Time of the last successful search, if there was one."
+          },
+          "testing": {
+            "type": "boolean",
+            "title": "Testing",
+            "description": "A test of this indexer is running right now.",
+            "default": false
+          },
+          "caps": {
+            "items": {
+              "$ref": "#/components/schemas/CategoryRef"
+            },
+            "type": "array",
+            "title": "Caps",
+            "description": "Flat list of categories."
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "description",
+          "configured",
+          "site_link",
+          "alternativesitelinks",
+          "language",
+          "tags",
+          "last_error",
+          "potatoenabled",
+          "healthy",
+          "failing",
+          "caps"
+        ],
+        "title": "IndexerSummary",
+        "description": "An indexer as listed by the discovery API."
+      },
+      "Limits": {
+        "properties": {
+          "default": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default"
+          },
+          "max": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max"
+          }
+        },
+        "type": "object",
+        "required": [
+          "default",
+          "max"
+        ],
+        "title": "Limits"
+      },
+      "ManualSearchResponse": {
+        "properties": {
+          "indexers": {
+            "items": {
+              "$ref": "#/components/schemas/SearchOutcome"
+            },
+            "type": "array",
+            "title": "Indexers",
+            "description": "Outcome per tracker; failures never fail the request."
+          },
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/Release"
+            },
+            "type": "array",
+            "title": "Results",
+            "description": "Newest first."
+          }
+        },
+        "type": "object",
+        "required": [
+          "indexers",
+          "results"
+        ],
+        "title": "ManualSearchResponse"
+      },
+      "PotatoItem": {
+        "properties": {
+          "release_name": {
+            "type": "string",
+            "title": "Release Name"
+          },
+          "torrent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Torrent Id"
+          },
+          "details_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Details Url"
+          },
+          "download_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Download Url"
+          },
+          "imdb_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Imdb Id"
+          },
+          "freeleech": {
+            "type": "boolean",
+            "title": "Freeleech"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type",
+            "default": "movie"
+          },
+          "size": {
+            "type": "integer",
+            "title": "Size",
+            "description": "Megabytes."
+          },
+          "leechers": {
+            "type": "integer",
+            "title": "Leechers"
+          },
+          "seeders": {
+            "type": "integer",
+            "title": "Seeders"
+          },
+          "publish_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Publish Date"
+          }
+        },
+        "type": "object",
+        "required": [
+          "release_name",
+          "freeleech",
+          "size",
+          "leechers",
+          "seeders"
+        ],
+        "title": "PotatoItem"
+      },
+      "PotatoResponse": {
+        "properties": {
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/PotatoItem"
+            },
+            "type": "array",
+            "title": "Results"
+          }
+        },
+        "type": "object",
+        "required": [
+          "results"
+        ],
+        "title": "PotatoResponse"
+      },
+      "Release": {
+        "properties": {
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title",
+            "examples": [
+              "Big Movie 2020 1080p"
+            ]
+          },
+          "guid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Guid",
+            "description": "Stable id at the tracker."
+          },
+          "link": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Link",
+            "description": "Download URL, proxied through this server."
+          },
+          "magnet_uri": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Magnet Uri"
+          },
+          "details": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Details",
+            "description": "Page of the release."
+          },
+          "category": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Category",
+            "description": "Torznab category ids."
+          },
+          "category_desc": {
+            "type": "string",
+            "title": "Category Desc",
+            "default": "",
+            "examples": [
+              "Movies/HD"
+            ]
+          },
+          "size": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Size",
+            "description": "Bytes."
+          },
+          "files": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Files"
+          },
+          "grabs": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Grabs",
+            "description": "Times downloaded."
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "seeders": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seeders"
+          },
+          "peers": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Peers",
+            "description": "Leechers."
+          },
+          "poster": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Poster"
+          },
+          "info_hash": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Info Hash"
+          },
+          "tracker": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tracker",
+            "description": "Name of the tracker."
+          },
+          "tracker_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tracker Id",
+            "description": "Indexer id."
+          },
+          "tracker_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tracker Type",
+            "examples": [
+              "public"
+            ]
+          },
+          "blackhole_link": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Blackhole Link"
+          },
+          "imdb": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Imdb",
+            "description": "IMDb id without `tt`."
+          },
+          "year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Year"
+          },
+          "minimum_ratio": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Minimum Ratio"
+          },
+          "minimum_seed_time": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Minimum Seed Time",
+            "description": "Seconds."
+          },
+          "download_volume_factor": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Download Volume Factor",
+            "description": "0 means freeleech."
+          },
+          "upload_volume_factor": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Upload Volume Factor"
+          },
+          "publish_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Publish Date",
+            "description": "ISO 8601."
+          },
+          "first_seen": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Seen",
+            "description": "ISO 8601."
+          },
+          "gain": {
+            "type": "number",
+            "title": "Gain",
+            "description": "Seeders per gigabyte.",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "title": "Release",
+        "description": "One torrent found by a tracker."
+      },
+      "SearchModeCapability": {
+        "properties": {
+          "available": {
+            "type": "boolean",
+            "title": "Available"
+          },
+          "parameters": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Parameters"
+          }
+        },
+        "type": "object",
+        "required": [
+          "available",
+          "parameters"
+        ],
+        "title": "SearchModeCapability"
+      },
+      "SearchOutcome": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "ok or error"
+          },
+          "results": {
+            "type": "integer",
+            "title": "Results"
+          },
+          "elapsed_ms": {
+            "type": "integer",
+            "title": "Elapsed Ms"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "status",
+          "results",
+          "elapsed_ms"
+        ],
+        "title": "SearchOutcome",
+        "description": "Status of one tracker in a manual search."
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    },
+    "securitySchemes": {
+      "ApiKey": {
+        "type": "apiKey",
+        "description": "The server's API key (also accepted as `passkey`).",
+        "in": "query",
+        "name": "apikey"
+      },
+      "DashboardSession": {
+        "type": "apiKey",
+        "description": "Session cookie set by `POST /UI/Login`.",
+        "in": "cookie",
+        "name": "PyJackett"
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "search",
+      "description": "Search the trackers of an indexer."
+    },
+    {
+      "name": "discovery",
+      "description": "Find out which indexers exist and what they offer. Read-only."
+    },
+    {
+      "name": "jackett",
+      "description": "The same operations under Jackett's `/api/v2.0` prefix, for clients written against Jackett."
+    }
+  ]
+}
