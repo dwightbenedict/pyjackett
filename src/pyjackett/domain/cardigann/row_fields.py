@@ -45,11 +45,7 @@ class FieldSpec:
 
     @property
     def is_optional(self) -> bool:
-        return (
-            self.key in OPTIONAL_FIELDS
-            or "optional" in self.modifiers
-            or self.block.optional
-        )
+        return self.key in OPTIONAL_FIELDS or "optional" in self.modifiers or self.block.optional
 
     @property
     def variable(self) -> str:

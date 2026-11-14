@@ -56,9 +56,7 @@ def test_range_with_index(variables):
 
 
 def test_join(variables):
-    assert (
-        apply_template('{{ join .Categories "," }}', variables) == "5000,5040"
-    )
+    assert apply_template('{{ join .Categories "," }}', variables) == "5000,5040"
 
 
 def test_re_replace(variables):
@@ -75,8 +73,7 @@ def test_re_replace(variables):
         ("{{ if and .Config.user .Config.free }}Y{{ else }}N{{ end }}", "N"),
         ("{{ if or .Config.free .Config.user }}Y{{ else }}N{{ end }}", "Y"),
         (
-            '{{ if and eq (.Config.user) "bob" eq (.Keywords) "big movie" }}'
-            "Y{{ else }}N{{ end }}",
+            '{{ if and eq (.Config.user) "bob" eq (.Keywords) "big movie" }}Y{{ else }}N{{ end }}',
             "Y",
         ),
     ],

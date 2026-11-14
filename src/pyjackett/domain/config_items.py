@@ -44,9 +44,7 @@ class ConfigItem:
     ) -> dict[str, Any] | None:
         return None
 
-    def from_json(
-        self, data: dict[str, Any], protector: Protector | None = None
-    ) -> None:
+    def from_json(self, data: dict[str, Any], protector: Protector | None = None) -> None:
         """Restore the value from a stored or posted JSON object."""
 
 

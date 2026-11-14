@@ -65,8 +65,7 @@ API_TAGS = [
     },
     {
         "name": "discovery",
-        "description": "Find out which indexers exist and what they offer. "
-        "Read-only.",
+        "description": "Find out which indexers exist and what they offer. Read-only.",
     },
     {
         "name": "jackett",
@@ -272,8 +271,7 @@ TORZNAB_FEED_EXAMPLE = """\
 </rss>
 """
 TORZNAB_ERROR_EXAMPLE = (
-    '<?xml version="1.0" encoding="UTF-8"?>\n'
-    '<error code="100" description="Invalid API Key"/>\n'
+    '<?xml version="1.0" encoding="UTF-8"?>\n<error code="100" description="Invalid API Key"/>\n'
 )
 _XML = {"type": "string", "format": "xml"}
 
@@ -319,8 +317,7 @@ TORZNAB_RESPONSES: dict[int | str, dict[str, Any]] = {
 PLAIN_ERRORS: dict[int | str, dict[str, Any]] = {
     401: {"description": "Missing or wrong API key. Empty body."},
     404: {
-        "description": "The indexer is unknown, not configured, or cannot "
-        "handle the query.",
+        "description": "The indexer is unknown, not configured, or cannot handle the query.",
         "content": {"text/plain": {"schema": {"type": "string"}}},
     },
 }
@@ -371,9 +368,7 @@ def _as_jackett(operation: dict[str, Any]) -> dict[str, Any]:
     return copy
 
 
-def add_jackett_paths(
-    spec: dict[str, Any], api_prefix: str, jackett_prefix: str
-) -> None:
+def add_jackett_paths(spec: dict[str, Any], api_prefix: str, jackett_prefix: str) -> None:
     """Document the Jackett-prefixed twin of every v1 operation.
 
     The app serves both prefixes from the same routers, so the twins differ
@@ -384,10 +379,7 @@ def add_jackett_paths(
         if api_prefix not in path:
             continue
         twin = path.replace(api_prefix, jackett_prefix, 1)
-        paths[twin] = {
-            method: _as_jackett(operation)
-            for method, operation in item.items()
-        }
+        paths[twin] = {method: _as_jackett(operation) for method, operation in item.items()}
 
 
 def finish_openapi(

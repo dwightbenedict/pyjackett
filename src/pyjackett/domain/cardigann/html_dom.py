@@ -23,15 +23,11 @@ _ROOT_PREFIX = ":root"
 _CONTAINS = ":contains("
 _XML_WRAPPER = "pjxml"
 _XML_PREFIX = "xml-"
-_VOID_ELEMENTS = (
-    "area|base|br|col|embed|hr|img|input|link|meta|param|source|track|wbr"
-)
+_VOID_ELEMENTS = "area|base|br|col|embed|hr|img|input|link|meta|param|source|track|wbr"
 _EMPTY_TAG = re.compile(r"<([\w:.-]+)((?:\s[^<>]*?)?)\s*/>")
 _NAMESPACE_PREFIX = re.compile(r"<(/?)[\w.-]+:(?=[\w.-])")
 _VOID_TAG = re.compile(rf"<(/?)({_VOID_ELEMENTS})(?=[\s/>])", re.IGNORECASE)
-_VOID_SELECTOR = re.compile(
-    rf"(?<![\w#.\[=\"'-])({_VOID_ELEMENTS})(?![\w-])", re.IGNORECASE
-)
+_VOID_SELECTOR = re.compile(rf"(?<![\w#.\[=\"'-])({_VOID_ELEMENTS})(?![\w-])", re.IGNORECASE)
 
 
 def parse_html(markup: str) -> Document:
@@ -127,9 +123,7 @@ def query_selector(element: Element, selector: str) -> Element | None:
     return scope.css_first(translated)
 
 
-def query_selector_all(
-    element: Document | Element, selector: str
-) -> list[Element]:
+def query_selector_all(element: Document | Element, selector: str) -> list[Element]:
     scope, translated = _prepare(element, selector)
     return scope.css(translated)
 
@@ -140,9 +134,7 @@ def matches(element: Element, selector: str) -> bool:
     scope = element.parent
     if scope is None:
         return element.css_matches(translated)
-    return any(
-        found.mem_id == element.mem_id for found in scope.css(translated)
-    )
+    return any(found.mem_id == element.mem_id for found in scope.css(translated))
 
 
 # ---- reading ----------------------------------------------------------------

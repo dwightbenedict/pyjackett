@@ -12,9 +12,7 @@ logger = logging.getLogger(__name__)
 POTATO_QUERY_TYPE = "TorrentPotato"
 
 
-def _supports_imdb_lookup(
-    caps: TorznabCapabilities, query: TorznabQuery
-) -> bool:
+def _supports_imdb_lookup(caps: TorznabCapabilities, query: TorznabQuery) -> bool:
     if not query.is_imdb_query:
         return False
     return (caps.tv_search_imdb_available and query.is_tv_search) or (
@@ -22,9 +20,7 @@ def _supports_imdb_lookup(
     )
 
 
-def _requires_missing_imdb_support(
-    caps: TorznabCapabilities, query: TorznabQuery
-) -> bool:
+def _requires_missing_imdb_support(caps: TorznabCapabilities, query: TorznabQuery) -> bool:
     """Movie queries by imdb id need imdb support (potato carries a title)."""
     return (
         query.is_movie_search
@@ -34,9 +30,7 @@ def _requires_missing_imdb_support(
     )
 
 
-def _supports_search_mode(
-    caps: TorznabCapabilities, query: TorznabQuery
-) -> bool:
+def _supports_search_mode(caps: TorznabCapabilities, query: TorznabQuery) -> bool:
     return (
         (caps.search_available and query.is_search)
         or (caps.tv_search_available and query.is_tv_search)
@@ -46,29 +40,17 @@ def _supports_search_mode(
     )
 
 
-def _supports_external_id(
-    caps: TorznabCapabilities, query: TorznabQuery
-) -> bool:
+def _supports_external_id(caps: TorznabCapabilities, query: TorznabQuery) -> bool:
     return (
         (caps.tv_search_tvrage_available and query.is_tvrage_query)
         or (caps.tv_search_tvdb_available and query.is_tvdb_query)
         or (caps.movie_search_imdb_available and query.is_imdb_query)
-        or (
-            caps.movie_search_tmdb_available
-            and query.is_tmdb_query
-            and query.is_movie_search
-        )
-        or (
-            caps.tv_search_tmdb_available
-            and query.is_tmdb_query
-            and query.is_tv_search
-        )
+        or (caps.movie_search_tmdb_available and query.is_tmdb_query and query.is_movie_search)
+        or (caps.tv_search_tmdb_available and query.is_tmdb_query and query.is_tv_search)
     )
 
 
-def can_handle_query(
-    caps: TorznabCapabilities, query: TorznabQuery | None
-) -> bool:
+def can_handle_query(caps: TorznabCapabilities, query: TorznabQuery | None) -> bool:
     """Mirror of Jackett's capability routing rules."""
     if query is None:
         return False
@@ -78,9 +60,7 @@ def can_handle_query(
         return True
     if _requires_missing_imdb_support(caps, query):
         return False
-    return _supports_search_mode(caps, query) or _supports_external_id(
-        caps, query
-    )
+    return _supports_search_mode(caps, query) or _supports_external_id(caps, query)
 
 
 def can_handle_categories(

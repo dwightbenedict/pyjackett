@@ -26,17 +26,13 @@ class NoRowsError(Exception):
     """The row selector matched nothing and that is not 'no results'."""
 
 
-def _declares_no_results(
-    parsed: Any, context: ResultContext, variables: Variables
-) -> bool:
+def _declares_no_results(parsed: Any, context: ResultContext, variables: Variables) -> bool:
     """True when the optional ``rows.count`` selector reports zero rows."""
     count_block = context.search.rows.count
     if count_block is None:
         return False
     try:
-        text = handle_json_selector(
-            count_block, parsed, variables, context.filter_context
-        )
+        text = handle_json_selector(count_block, parsed, variables, context.filter_context)
         return int(text) < 1
     except Exception as error:
         logger.debug("Failed to parse JSON rows count: %s", error)
@@ -68,9 +64,7 @@ def _parse_object(
     def extract(spec, required):
         selector = spec.block.selector or ""
         parent = row if selector.startswith(PARENT_SELECTOR_PREFIX) else item
-        return handle_json_selector(
-            spec.block, parent, variables, context.filter_context, required
-        )
+        return handle_json_selector(spec.block, parent, variables, context.filter_context, required)
 
     release = context.row_parser.parse_row(extract, variables, search_url)
     skip = should_skip_row(
@@ -105,9 +99,7 @@ def parse_json_results(
         if context.is_full(releases):
             break
         for item in _row_objects(row, context):
-            release = _parse_object(
-                row, item, context, variables, query, search_url
-            )
+            release = _parse_object(row, item, context, variables, query, search_url)
             if release is not None:
                 releases.append(release)
     return releases

@@ -33,9 +33,7 @@ class TrustedCertificates:
 CertificateProbe = Callable[[str, int, float], Awaitable[bytes | None]]
 
 
-async def fetch_peer_certificate(
-    host: str, port: int, timeout: float
-) -> bytes | None:
+async def fetch_peer_certificate(host: str, port: int, timeout: float) -> bytes | None:
     """The DER certificate ``host`` presents, without validating it."""
     context = ssl.create_default_context()
     context.check_hostname = False

@@ -30,17 +30,13 @@ def form_fields(form: Element) -> dict[str, str]:
     return fields
 
 
-def _input_name(
-    key: str, document: Element, use_selectors: bool, config
-) -> str:
+def _input_name(key: str, document: Element, use_selectors: bool, config) -> str:
     """A login input key is a field name, or a CSS selector to resolve."""
     if not use_selectors:
         return key
     element = html_dom.query_selector(document, key)
     if element is None:
-        raise ConfigurationError(
-            f"Login failed: No input found using selector {key}", config
-        )
+        raise ConfigurationError(f"Login failed: No input found using selector {key}", config)
     return html_dom.attribute_value(element, "name")
 
 
@@ -68,13 +64,10 @@ def selector_values(
     values: dict[str, str] = {}
     for key, block in (blocks or {}).items():
         try:
-            value = handle_selector(
-                block, root, variables, context, required=not block.optional
-            )
+            value = handle_selector(block, root, variables, context, required=not block.optional)
         except Exception as error:
             raise RuntimeError(
-                f"Error while parsing {label}={key}, "
-                f"selector={block.selector}: {error}"
+                f"Error while parsing {label}={key}, selector={block.selector}: {error}"
             ) from error
         if not (block.optional and value is None):
             values[key] = value
@@ -85,8 +78,7 @@ def build_multipart(fields: dict[str, str]) -> tuple[str, str]:
     """Return (body, content type) of a multipart/form-data submission."""
     boundary = "---------------------------" + str(int(time.time()))
     parts = [
-        f'--{boundary}\r\nContent-Disposition: form-data; name="{name}"'
-        f"\r\n\r\n{value}"
+        f'--{boundary}\r\nContent-Disposition: form-data; name="{name}"\r\n\r\n{value}'
         for name, value in fields.items()
     ]
     parts.append(f"--{boundary}--")

@@ -25,18 +25,14 @@ def add_basic_login(data: ConfigurationData, message: str | None = None):
     add_instructions(data, message)
 
 
-def add_basic_login_with_pid(
-    data: ConfigurationData, message: str | None = None
-) -> None:
+def add_basic_login_with_pid(data: ConfigurationData, message: str | None = None) -> None:
     data.add_dynamic(USERNAME, StringItem("Username"))
     data.add_dynamic(PASSWORD, StringItem("Password"))
     data.add_dynamic(PID, StringItem("Pid"))
     add_instructions(data, message)
 
 
-def add_basic_login_with_email(
-    data: ConfigurationData, message: str | None = None
-) -> None:
+def add_basic_login_with_email(data: ConfigurationData, message: str | None = None) -> None:
     data.add_dynamic("email", StringItem("Email"))
     data.add_dynamic(PASSWORD, StringItem("Password"))
     add_instructions(data, message)

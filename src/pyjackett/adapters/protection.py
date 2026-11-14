@@ -20,9 +20,7 @@ class ProtectionService:
         self._fernet = Fernet(key)
 
     @classmethod
-    def for_data_dir(
-        cls, data_dir: Path, passphrase: str | None = None
-    ) -> ProtectionService:
+    def for_data_dir(cls, data_dir: Path, passphrase: str | None = None) -> ProtectionService:
         """Use ``passphrase`` if given, otherwise a generated key file."""
         if passphrase:
             return cls(_key_from_passphrase(passphrase))

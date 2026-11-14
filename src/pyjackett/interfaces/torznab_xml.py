@@ -67,9 +67,7 @@ def _searching(root: ET.Element, caps: TorznabCapabilities) -> None:
     for mode, tag in _SEARCH_ELEMENTS:
         element = ET.SubElement(searching, tag)
         element.set("available", "yes" if caps.mode_available(mode) else "no")
-        element.set(
-            "supportedParams", ",".join(caps.advertised_parameters(mode))
-        )
+        element.set("supportedParams", ",".join(caps.advertised_parameters(mode)))
         if caps.supports_raw_search:
             element.set("searchEngine", "raw")
 
@@ -77,9 +75,7 @@ def _searching(root: ET.Element, caps: TorznabCapabilities) -> None:
 def _categories(root: ET.Element, caps: TorznabCapabilities) -> None:
     categories = ET.SubElement(root, "categories")
     for parent in caps.categories.category_tree(sort=True):
-        element = ET.SubElement(
-            categories, "category", id=str(parent.id), name=parent.name
-        )
+        element = ET.SubElement(categories, "category", id=str(parent.id), name=parent.name)
         for child in parent.subcategories:
             ET.SubElement(element, "subcat", id=str(child.id), name=child.name)
 
@@ -114,9 +110,7 @@ def _format_date(moment: datetime | None) -> str:
 
 def _attr(item: ET.Element, name: str, value) -> None:
     if value is not None:
-        ET.SubElement(
-            item, f"{{{TORZNAB_NS}}}attr", name=name, value=str(value)
-        )
+        ET.SubElement(item, f"{{{TORZNAB_NS}}}attr", name=name, value=str(value))
 
 
 def _link_of(release: ReleaseInfo) -> str:

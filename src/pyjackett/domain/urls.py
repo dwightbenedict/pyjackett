@@ -21,9 +21,7 @@ def url_encode(text: str | None, encoding: str = "utf-8") -> str:
     """Form-encode ``text`` like .NET's ``WebUtility.UrlEncode``."""
     if not text:
         return ""
-    return quote_plus(text, safe=_FORM_SAFE_CHARS, encoding=encoding).replace(
-        "~", "%7E"
-    )
+    return quote_plus(text, safe=_FORM_SAFE_CHARS, encoding=encoding).replace("~", "%7E")
 
 
 def url_decode(text: str | None, encoding: str = "utf-8") -> str:
@@ -38,9 +36,7 @@ def build_query_string(
     separator: str = "&",
 ) -> str:
     """Join ``key=value`` pairs; only the values are encoded."""
-    return separator.join(
-        f"{key}={url_encode(value, encoding)}" for key, value in pairs
-    )
+    return separator.join(f"{key}={url_encode(value, encoding)}" for key, value in pairs)
 
 
 def encode_url(url: str) -> str:

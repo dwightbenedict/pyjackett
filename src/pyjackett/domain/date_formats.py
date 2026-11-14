@@ -98,15 +98,11 @@ def _go_token_to_strptime(token: str) -> str:
 
 
 def net_format_to_strptime(layout: str) -> str:
-    return "".join(
-        _net_token_to_strptime(token) for token in _NET_TOKEN.findall(layout)
-    )
+    return "".join(_net_token_to_strptime(token) for token in _NET_TOKEN.findall(layout))
 
 
 def go_layout_to_strptime(layout: str) -> str:
-    return "".join(
-        _go_token_to_strptime(token) for token in _GO_TOKEN.findall(layout)
-    )
+    return "".join(_go_token_to_strptime(token) for token in _GO_TOKEN.findall(layout))
 
 
 def looks_like_net_format(layout: str) -> bool:
@@ -135,6 +131,4 @@ def parse_with_layout(text: str, layout: str) -> tuple[datetime, str]:
         parsed = parse_exact(text, candidate)
         if parsed is not None:
             return parsed, candidate
-    raise ValueError(
-        f'Error while parsing DateTime "{text}", using layout "{layout}"'
-    )
+    raise ValueError(f'Error while parsing DateTime "{text}", using layout "{layout}"')

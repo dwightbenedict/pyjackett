@@ -47,9 +47,7 @@ class VideoTracker(AvistazTracker):
             SearchMode.TV,
             ["q", "season", "ep", "imdbid", "tvdbid", "genre"],
         )
-        caps.set_parameters(
-            SearchMode.MOVIE, ["q", "imdbid", "tmdbid", "genre"]
-        )
+        caps.set_parameters(SearchMode.MOVIE, ["q", "imdbid", "tmdbid", "genre"])
         caps.tv_search_imdb_available = True
         for tracker_id, group in (
             (1, (cat.MOVIES, cat.MOVIES_UHD, cat.MOVIES_HD, cat.MOVIES_SD)),
@@ -63,8 +61,7 @@ class AvistaZ(VideoTracker):
     id = "avistaz"
     name = "AvistaZ"
     description = (
-        "AvistaZ (AsiaTorrents) is a Private Torrent Tracker for ASIAN "
-        "MOVIES / TV / GENERAL"
+        "AvistaZ (AsiaTorrents) is a Private Torrent Tracker for ASIAN MOVIES / TV / GENERAL"
     )
     default_site_link = "https://avistaz.to/"
 
@@ -95,9 +92,7 @@ class AvistaZ(VideoTracker):
             (AUDIO_KEY, "language[]"),
             (SUBTITLE_KEY, "subtitle[]"),
         ):
-            for language_id in dict.fromkeys(
-                self.config_data.get_dynamic(key).values
-            ):
+            for language_id in dict.fromkeys(self.config_data.get_dynamic(key).values):
                 parameters.append((field, language_id))
         return parameters
 
@@ -112,8 +107,7 @@ class CinemaZ(VideoTracker):
     id = "cinemaz"
     name = "CinemaZ"
     description = (
-        "CinemaZ (EuTorrents) is a Private Torrent Tracker for FOREIGN "
-        "NON-ASIAN MOVIES / TV"
+        "CinemaZ (EuTorrents) is a Private Torrent Tracker for FOREIGN NON-ASIAN MOVIES / TV"
     )
     default_site_link = "https://cinemaz.to/"
 
@@ -179,10 +173,7 @@ class ExoticaZ(AvistazTracker):
 class AnimeZ(AvistazTracker):
     id = "animez"
     name = "AnimeZ"
-    description = (
-        "AnimeZ (ex-AnimeTorrents) is a Private Torrent Tracker for "
-        "ANIME / MANGA"
-    )
+    description = "AnimeZ (ex-AnimeTorrents) is a Private Torrent Tracker for ANIME / MANGA"
     default_site_link = "https://animez.to/"
     legacy_site_links = ("https://animetorrents.me/",)
     replaces = ("animetorrents",)
@@ -222,6 +213,4 @@ class AnimeZ(AvistazTracker):
         return response.content_bytes
 
     async def _download_response(self, link: str):
-        return await self.requester.request(
-            self.unclean_link(link), headers=self._search_headers()
-        )
+        return await self.requester.request(self.unclean_link(link), headers=self._search_headers())

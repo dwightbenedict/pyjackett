@@ -56,10 +56,7 @@ def _status(argument: str) -> Predicate:
         "unknown": lambda i: i.is_healthy == i.is_failing,
     }
     if argument.lower() not in outcomes:
-        raise ValueError(
-            "Invalid filter. Status should be 'healthy', 'failing' or "
-            "'unknown'"
-        )
+        raise ValueError("Invalid filter. Status should be 'healthy', 'failing' or 'unknown'")
     return _configured(outcomes[argument.lower()])
 
 

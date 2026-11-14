@@ -60,15 +60,11 @@ class TorrentDownloader:
                 "Failed download response:\n%s",
                 response.content_bytes.decode("utf-8", errors="replace"),
             )
-        target = (
-            f" => {response.redirecting_to}" if response.is_redirect else ""
-        )
+        target = f" => {response.redirecting_to}" if response.is_redirect else ""
         return f"Remote server returned {response.status}{target}"
 
     async def download_image(self, link: str, referer: str) -> WebResult:
-        response = await self._requester.request(
-            link, None, RequestType.GET, referer
-        )
+        response = await self._requester.request(link, None, RequestType.GET, referer)
         if response.is_redirect:
             response = await self._requester.follow_if_redirect(response)
         return response

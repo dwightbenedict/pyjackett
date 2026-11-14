@@ -71,9 +71,7 @@ def _search_with_defaults(search: SearchBlock) -> SearchBlock:
 class CardigannIndexer(BaseWebIndexer):
     """Searches, logs in and downloads as the definition describes."""
 
-    def __init__(
-        self, dependencies: IndexerDependencies, definition: IndexerDefinition
-    ) -> None:
+    def __init__(self, dependencies: IndexerDependencies, definition: IndexerDefinition) -> None:
         self.definition = _with_defaults(definition)
         self.id = definition.id
         self.name = definition.name
@@ -91,9 +89,7 @@ class CardigannIndexer(BaseWebIndexer):
         super().__init__(dependencies, build_configuration(definition))
         if definition.request_delay is not None:
             self.client.set_request_delay(definition.request_delay)
-        self.torznab_caps, default_categories = build_capabilities(
-            definition.caps, self.id
-        )
+        self.torznab_caps, default_categories = build_capabilities(definition.caps, self.id)
         self._address = SiteAddress(self, definition, self.client, self._clock)
         self._login = CardigannLogin(self)
         self._search = CardigannSearch(
@@ -107,17 +103,12 @@ class CardigannIndexer(BaseWebIndexer):
         self.load_values_from_json(None)
 
     def same_definition_as(self, other: BaseIndexer) -> bool:
-        return (
-            isinstance(other, CardigannIndexer)
-            and self.definition == other.definition
-        )
+        return isinstance(other, CardigannIndexer) and self.definition == other.definition
 
     # ---- CardigannHost interface --------------------------------------------
 
     def base_variables(self) -> Variables:
-        return base_variables(
-            self.site_link, self.definition.settings, self.config_data
-        )
+        return base_variables(self.site_link, self.definition.settings, self.config_data)
 
     def filter_context(self, variables: Variables) -> FilterContext:
         return FilterContext(self.id, self.encoding, variables)
@@ -156,14 +147,10 @@ class CardigannIndexer(BaseWebIndexer):
         try:
             return await self._login.get_configuration_for_setup(False)
         except Exception:
-            logger.exception(
-                "Exception in get_configuration_for_setup (%s)", self.id
-            )
+            logger.exception("Exception in get_configuration_for_setup (%s)", self.id)
             return self.config_data
 
-    async def apply_configuration(
-        self, config: list[dict[str, Any]]
-    ) -> ConfigurationStatus:
+    async def apply_configuration(self, config: list[dict[str, Any]]) -> ConfigurationStatus:
         self.load_values_from_json(config)
         await self.follow_site_address()
         await self._login.do_login()

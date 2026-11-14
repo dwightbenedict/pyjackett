@@ -87,9 +87,7 @@ class DefinitionCache:
             with self._path.open("rb") as file:
                 fingerprint, entries = pickle.load(file)  # noqa: S301
         except Exception as error:  # a damaged cache is only a slow start
-            logger.warning(
-                "Ignoring definition cache %s: %s", self._path, error
-            )
+            logger.warning("Ignoring definition cache %s: %s", self._path, error)
             return {}
         return entries if fingerprint == code_fingerprint() else {}
 

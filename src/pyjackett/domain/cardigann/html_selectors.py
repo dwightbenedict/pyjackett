@@ -25,9 +25,7 @@ def _select_target(
         return dom
     selection = html_dom.query_selector(dom, expanded)
     if selection is None and required:
-        raise SelectorError(
-            f'Selector "{expanded}" didn\'t match {html_dom.to_html(dom)}'
-        )
+        raise SelectorError(f'Selector "{expanded}" didn\'t match {html_dom.to_html(dom)}')
     return selection
 
 
@@ -52,20 +50,16 @@ def _case_value(
     if required:
         cases = ",".join(block.case)
         raise SelectorError(
-            f'None of the case selectors "{cases}" matched '
-            f"{html_dom.to_html(selection)}"
+            f'None of the case selectors "{cases}" matched {html_dom.to_html(selection)}'
         )
     return None
 
 
-def _attribute_value(
-    block: SelectorBlock, selection: Element, required: bool
-) -> str | None:
+def _attribute_value(block: SelectorBlock, selection: Element, required: bool) -> str | None:
     value = html_dom.attribute_value(selection, block.attribute)
     if value is None and required:
         raise SelectorError(
-            f'Attribute "{block.attribute}" is not set for element '
-            f"{html_dom.to_html(selection)}"
+            f'Attribute "{block.attribute}" is not set for element {html_dom.to_html(selection)}'
         )
     return value
 

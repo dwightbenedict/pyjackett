@@ -52,9 +52,7 @@ class CardigannSearch:
         self._caps = caps
         self._default_categories = default_categories
         self._search = host.definition.search
-        self._row_parser = RowParser(
-            field_specs(self._search), caps.categories, host.id
-        )
+        self._row_parser = RowParser(field_specs(self._search), caps.categories, host.id)
 
     # ---- entry point --------------------------------------------------------
 
@@ -67,10 +65,7 @@ class CardigannSearch:
             self._search.keywordsfilters,
             host.filter_context(variables),
         )
-        mapped = (
-            self._caps.categories.to_tracker_categories(query)
-            or self._default_categories
-        )
+        mapped = self._caps.categories.to_tracker_categories(query) or self._default_categories
         releases: list[ReleaseInfo] = []
         visited: set[str] = set()
         for path in self._search.paths:
@@ -84,9 +79,7 @@ class CardigannSearch:
                 logger.debug("Skipping duplicated request: %s", request.url)
                 continue
             visited.add(request.url)
-            releases += await self._search_path(
-                path, request, variables, query
-            )
+            releases += await self._search_path(path, request, variables, query)
         return releases[: query.limit] if query.limit > 0 else releases
 
     # ---- one path -----------------------------------------------------------
@@ -132,9 +125,7 @@ class CardigannSearch:
         response_type = path.response.type if path.response else None
         context = self._result_context(variables)
         if response_type == "json":
-            return await self._search_json(
-                path, request, variables, query, context
-            )
+            return await self._search_json(path, request, variables, query, context)
         return await self._search_markup(
             path, request, variables, query, context, response_type == "xml"
         )
@@ -151,15 +142,12 @@ class CardigannSearch:
 
     # ---- JSON ---------------------------------------------------------------
 
-    async def _search_json(
-        self, path, request, variables, query, context
-    ) -> list[ReleaseInfo]:
+    async def _search_json(self, path, request, variables, query, context) -> list[ReleaseInfo]:
         response = await self._fetch_logged_in(path, request, variables)
         text = response.content_string
         if response.status != HTTP_OK:
             raise RuntimeError(
-                f"Error Parsing Json Response: Status={response.status} "
-                f"Response={text}"
+                f"Error Parsing Json Response: Status={response.status} Response={text}"
             )
         if self._declares_no_results(path, text):
             return []
@@ -172,9 +160,7 @@ class CardigannSearch:
                 text,
             )
             raise RuntimeError("Error Parsing Json Response") from error
-        return parse_json_results(
-            parsed, context, variables, query, request.url
-        )
+        return parse_json_results(parsed, context, variables, query, request.url)
 
     @staticmethod
     def _declares_no_results(path: SearchPathBlock, text: str) -> bool:
@@ -196,9 +182,7 @@ class CardigannSearch:
         text = response.content_string
         try:
             document = self._parse_document(response, text, variables, is_xml)
-            return parse_html_results(
-                document, context, variables, query, request.url
-            )
+            return parse_html_results(document, context, variables, query, request.url)
         except Exception as error:
             raise self._parse_error(text, error) from error
 
@@ -208,9 +192,7 @@ class CardigannSearch:
             self._login.check_for_error(response, self._search.error)
         filters = self._search.preprocessingfilters
         if filters:
-            text = apply_filters(
-                text, filters, self._host.filter_context(variables)
-            )
+            text = apply_filters(text, filters, self._host.filter_context(variables))
         return parse(text)
 
     def _parse_error(self, text: str, error: Exception) -> Exception:

@@ -68,9 +68,7 @@ class WebClient:
     async def _wait_for_request_delay(self, request: WebRequest) -> None:
         if not self._request_delay or self._last_request is None:
             return
-        remaining = self._request_delay - (
-            self._clock.monotonic() - self._last_request
-        )
+        remaining = self._request_delay - (self._clock.monotonic() - self._last_request)
         if remaining > 0:
             logger.debug(
                 "delaying request for %s by %.1f seconds",
@@ -92,9 +90,7 @@ class WebClient:
         cookies, user_agent = self._clearance_for(request.url)
         if cookies:
             request = self._with_cookies(request, cookies)
-        kwargs = build_request_kwargs(
-            request, user_agent, self._session.impersonating
-        )
+        kwargs = build_request_kwargs(request, user_agent, self._session.impersonating)
         profile = self._clearance_profile(user_agent)
         if profile:
             kwargs["impersonate"] = profile
@@ -123,10 +119,7 @@ class WebClient:
     # ---- Cloudflare / FlareSolverr ------------------------------------------
 
     def _needs_solving(self, result: WebResult) -> bool:
-        return (
-            self._session.flaresolverr is not None
-            and is_cloudflare_challenge(result)
-        )
+        return self._session.flaresolverr is not None and is_cloudflare_challenge(result)
 
     async def _solve(self, request: WebRequest) -> WebResult:
         solver = self._session.flaresolverr

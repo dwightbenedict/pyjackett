@@ -42,17 +42,13 @@ def _decode_target(context: AppContext, encoded: str) -> str:
 def _web_indexer(context: AppContext, indexer_id: str) -> BaseWebIndexer:
     indexer = context.indexers.get_web_indexer(indexer_id)
     if not indexer.is_configured:
-        logger.warning(
-            "Rejected a request to %s which is unconfigured.", indexer.name
-        )
+        logger.warning("Rejected a request to %s which is unconfigured.", indexer.name)
         raise PermissionError("This indexer is not configured.")
     return indexer
 
 
 def _authorized(context: AppContext, request: Request) -> bool:
-    return context.security.is_valid_api_key(
-        _query_value(request, "jackett_apikey")
-    )
+    return context.security.is_valid_api_key(_query_value(request, "jackett_apikey"))
 
 
 @router.get("/dl/{indexer_id}")
@@ -65,36 +61,26 @@ async def download(request: Request, context: Context, indexer_id: str):
         target = _decode_target(context, _query_value(request, "path"))
         data = await indexer.download(target)
         if data.startswith(MAGNET_PREFIX):
-            return Response(
-                status_code=302, headers={"Location": data.decode("utf-8")}
-            )
-        name = make_valid_file_name(
-            _query_value(request, "file") or "", "_", False
-        )
+            return Response(status_code=302, headers={"Location": data.decode("utf-8")})
+        name = make_valid_file_name(_query_value(request, "file") or "", "_", False)
         return Response(
             bencode.normalize(data),
             media_type="application/x-bittorrent",
-            headers={
-                "Content-Disposition": f'attachment; filename="{name}.torrent"'
-            },
+            headers={"Content-Disposition": f'attachment; filename="{name}.torrent"'},
         )
     except Exception:
         logger.exception("Error downloading. indexer: %s", indexer_id)
         return Response(status_code=404)
 
 
-def _blackhole_file_name(
-    stamp_ns: int, indexer_name: str, file: str, extension: str
-) -> str:
+def _blackhole_file_name(stamp_ns: int, indexer_name: str, file: str, extension: str) -> str:
     stamp = f"{stamp_ns}-{make_valid_file_name(indexer_name, '_', False)}"
     if not file.strip():
         return stamp + extension
     return f"{stamp}-{make_valid_file_name(file + extension, '_', False)}"
 
 
-def _write_blackhole(
-    directory: Path, name: str, data: bytes, ext: str
-) -> None:
+def _write_blackhole(directory: Path, name: str, data: bytes, ext: str) -> None:
     try:
         (directory / name).write_bytes(data)
     except OSError:
@@ -126,9 +112,7 @@ async def blackhole(request: Request, context: Context, indexer_id: str):
         _write_blackhole(directory, name, data, extension)
         return JSONResponse({"result": "success"})
     except Exception as error:
-        logger.exception(
-            "Error downloading to blackhole. indexer: %s", indexer_id
-        )
+        logger.exception("Error downloading to blackhole. indexer: %s", indexer_id)
         return JSONResponse({"result": "error", "error": str(error)})
 
 
@@ -158,7 +142,5 @@ async def image(request: Request, context: Context, indexer_id: str):
             media_type=result.header("content-type") or "image/jpeg",
         )
     except Exception:
-        logger.debug(
-            "Error downloading image. indexer: %s", indexer_id, exc_info=True
-        )
+        logger.debug("Error downloading image. indexer: %s", indexer_id, exc_info=True)
         return Response(status_code=500)

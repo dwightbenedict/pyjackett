@@ -70,9 +70,7 @@ INDEXER_UNSUPPORTED = 201
 GENERIC_ERROR = 900
 
 
-def _error_response(
-    code: int, description: str, status: int = 400
-) -> Response:
+def _error_response(code: int, description: str, status: int = 400) -> Response:
     return Response(
         torznab_xml.error_xml(code, description),
         status_code=status,
@@ -114,29 +112,21 @@ class PlainErrors:
 def authorized_indexer(errors):
     """Dependency: the configured indexer, or a GuardFailureError response."""
 
-    def dependency(
-        request: Request, indexer_id: IndexerId, context: Context
-    ) -> BaseIndexer:
+    def dependency(request: Request, indexer_id: IndexerId, context: Context) -> BaseIndexer:
         if not has_valid_api_key(context.security, request):
             raise GuardFailureError(errors.invalid_api_key())
         try:
             indexer = context.indexers.get_indexer(indexer_id)
         except UnknownIndexerError:
-            raise GuardFailureError(
-                errors.not_supported("Indexer is not supported")
-            ) from None
+            raise GuardFailureError(errors.not_supported("Indexer is not supported")) from None
         if not indexer.is_configured:
-            raise GuardFailureError(
-                errors.not_supported("Indexer is not configured")
-            )
+            raise GuardFailureError(errors.not_supported("Indexer is not configured"))
         return indexer
 
     return dependency
 
 
-TorznabIndexer = Annotated[
-    BaseIndexer, Depends(authorized_indexer(TorznabErrors))
-]
+TorznabIndexer = Annotated[BaseIndexer, Depends(authorized_indexer(TorznabErrors))]
 PlainIndexer = Annotated[BaseIndexer, Depends(authorized_indexer(PlainErrors))]
 
 
@@ -234,12 +224,8 @@ async def torznab(
         )
     if query.query_type.lower() == "indexers":
         if not indexer.is_meta:
-            return _error_response(
-                203, "Function Not Available: this isn't a meta indexer"
-            )
-        return _indexers_listing(
-            indexer, request.query_params.get("configured")
-        )
+            return _error_response(203, "Function Not Available: this isn't a meta indexer")
+        return _indexers_listing(indexer, request.query_params.get("configured"))
     problem = validate_query(query, indexer)
     if problem:
         return _error_response(problem.code, problem.description)
@@ -264,13 +250,10 @@ def _potato_item(context, indexer, release, url) -> dict:
         "freeleech": release.download_volume_factor == 0,
         "type": "movie",
         "size": (release.size or 0) // (1024 * 1024),
-        "leechers": (release.peers if release.peers is not None else -1)
-        - (release.seeders or 0),
+        "leechers": (release.peers if release.peers is not None else -1) - (release.seeders or 0),
         "seeders": release.seeders if release.seeders is not None else -1,
         "publish_date": (
-            published.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%S")
-            if published
-            else None
+            published.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%S") if published else None
         ),
     }
 
@@ -313,9 +296,7 @@ def _manual_parameters(request: Request) -> dict:
     params = request.query_params
     return {
         "query": params.get("query"),
-        "categories": [
-            int(c) for c in params.get("Category[]", "").split(",") if c
-        ],
+        "categories": [int(c) for c in params.get("Category[]", "").split(",") if c],
         "imdbid": params.get("imdbid"),
         "tmdbid": params.get("tmdbid"),
         "tvdbid": params.get("tvdbid"),
@@ -394,22 +375,15 @@ def _start_searches(
 ) -> tuple[TorznabQuery, dict[asyncio.Task, BaseIndexer]]:
     """Start the selected trackers' searches in parallel."""
     query = manual_search_query(_manual_parameters(request))
-    requested = [
-        t for t in request.query_params.get("Tracker[]", "").split(",") if t
-    ]
+    requested = [t for t in request.query_params.get("Tracker[]", "").split(",") if t]
     trackers = _selected_trackers(indexer, requested, query)
     query.interactive_search = True
     is_meta = not requested or len(requested) > 1
-    searches = {
-        asyncio.ensure_future(t.results_for_query(query, is_meta)): t
-        for t in trackers
-    }
+    searches = {asyncio.ensure_future(t.results_for_query(query, is_meta)): t for t in trackers}
     return query, searches
 
 
-def _tracker_results(
-    context, task: asyncio.Task, url: str
-) -> list[TrackerCacheResult]:
+def _tracker_results(context, task: asyncio.Task, url: str) -> list[TrackerCacheResult]:
     """Releases of one finished search, newest first."""
     if task.cancelled() or task.exception() is not None:
         return []
@@ -452,9 +426,7 @@ def _newest_first(
     responses=PLAIN_ERRORS,
     openapi_extra={"parameters": MANUAL_PARAMETERS},
 )
-async def manual_search(
-    request: Request, context: Context, indexer: PlainIndexer
-):
+async def manual_search(request: Request, context: Context, indexer: PlainIndexer):
     stopwatch = Stopwatch(context.clock)
     query, searches = _start_searches(request, indexer)
     url = server_url(context, request)
@@ -463,9 +435,7 @@ async def manual_search(
     async for task, tracker in _as_completed(searches):
         statuses.append(_outcome_json(task, tracker))
         found += _tracker_results(context, task, url)
-    _log_manual(
-        list(searches.values()), query, len(found), stopwatch.elapsed_ms
-    )
+    _log_manual(list(searches.values()), query, len(found), stopwatch.elapsed_ms)
     return JSONResponse(
         {
             "indexers": statuses,
@@ -482,9 +452,7 @@ async def manual_search(
     responses={**NDJSON_RESPONSE, **PLAIN_ERRORS},
     openapi_extra={"parameters": MANUAL_PARAMETERS},
 )
-async def manual_search_stream(
-    request: Request, context: Context, indexer: PlainIndexer
-):
+async def manual_search_stream(request: Request, context: Context, indexer: PlainIndexer):
     """Newline-delimited JSON: one line per tracker, as it finishes."""
     stopwatch = Stopwatch(context.clock)
     query, searches = _start_searches(request, indexer)
@@ -504,9 +472,7 @@ async def manual_search_stream(
         finally:
             for task in searches:
                 task.cancel()  # a client that went away stops the work
-        _log_manual(
-            list(searches.values()), query, count, stopwatch.elapsed_ms
-        )
+        _log_manual(list(searches.values()), query, count, stopwatch.elapsed_ms)
 
     # already encoded: gzip would hold lines back until the buffer fills
     return StreamingResponse(

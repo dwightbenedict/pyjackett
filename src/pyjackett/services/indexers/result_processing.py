@@ -20,9 +20,7 @@ logger = logging.getLogger(__name__)
 PRIVATE_TYPE = "private"
 
 
-def is_valid_release(
-    release: ReleaseInfo, interactive_search: bool, indexer_id: str
-) -> bool:
+def is_valid_release(release: ReleaseInfo, interactive_search: bool, indexer_id: str) -> bool:
     """A release needs a title; normal searches also size and category."""
     if is_blank(release.title):
         logger.error(
@@ -84,9 +82,7 @@ def _complete_links(release: ReleaseInfo, indexer_type: str | None) -> None:
         and not is_blank(release.info_hash)
         and indexer_type != PRIVATE_TYPE
     ):
-        release.magnet_uri = info_hash_to_public_magnet(
-            release.info_hash, release.title
-        )
+        release.magnet_uri = info_hash_to_public_magnet(release.info_hash, release.title)
     if release.magnet_uri is not None and is_blank(release.info_hash):
         release.info_hash = magnet_to_info_hash(release.magnet_uri)
 

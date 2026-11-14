@@ -15,9 +15,7 @@ from pyjackett.domain.search_modes import SearchMode
 logger = logging.getLogger(__name__)
 
 
-def _apply_search_modes(
-    caps: TorznabCapabilities, modes: dict[str, list[str]] | None
-) -> None:
+def _apply_search_modes(caps: TorznabCapabilities, modes: dict[str, list[str]] | None) -> None:
     """Validate the declared modes and copy their parameters."""
     if not modes:
         raise ValueError("At least one search mode is required")
@@ -31,8 +29,7 @@ def _apply_search_modes(
         if mode is SearchMode.SEARCH:
             if parameters != ["q"]:
                 raise ValueError(
-                    "In search mode 'search' only 'q' parameter is "
-                    "supported and it's mandatory"
+                    "In search mode 'search' only 'q' parameter is supported and it's mandatory"
                 )
             continue
         caps.set_parameters(mode, parameters)
@@ -45,8 +42,7 @@ def _add_simple_categories(
         category = get_category_by_name(name)
         if category is None:
             logger.error(
-                "CardigannIndexer (%s): invalid Torznab category for id "
-                "%s: %s",
+                "CardigannIndexer (%s): invalid Torznab category for id %s: %s",
                 indexer_id,
                 tracker_id,
                 name,
@@ -83,9 +79,6 @@ def build_capabilities(
     _add_simple_categories(caps, block.categories or {}, indexer_id)
     defaults = []
     for mapping in block.categorymappings or []:
-        if (
-            _add_category_mapping(caps, mapping, indexer_id)
-            and mapping.default
-        ):
+        if _add_category_mapping(caps, mapping, indexer_id) and mapping.default:
             defaults.append(mapping.id)
     return caps, defaults

@@ -109,16 +109,12 @@ class HttpSession:
         pinned = self._certificates.has_pins_for(host)
         if pinned:
             await self._assert_pinned(host, url.port or HTTPS_PORT)
-        return await self._session().request(
-            verify=not pinned, **request_kwargs
-        )
+        return await self._session().request(verify=not pinned, **request_kwargs)
 
     async def _assert_pinned(self, host: str, port: int) -> None:
         der = await self._certificate_probe(host, port, self._timeout)
         if not der or not self._certificates.is_trusted(host, der):
-            raise PinnedCertificateError(
-                f"certificate validation failed for {host}"
-            )
+            raise PinnedCertificateError(f"certificate validation failed for {host}")
 
     # ---- FlareSolverr -------------------------------------------------------
 

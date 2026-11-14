@@ -41,9 +41,7 @@ class IndexerStats:
         data["average_elapsed_ms"] = (
             self.total_elapsed_ms // self.successes if self.successes else None
         )
-        data["cache_hit_rate"] = (
-            self.cache_hits / self.searches if self.searches else None
-        )
+        data["cache_hit_rate"] = self.cache_hits / self.searches if self.searches else None
         return data
 
 
@@ -78,9 +76,7 @@ class SearchRecorder:
 
     # ---- recording ----------------------------------------------------------
 
-    def record_success(
-        self, indexer_id: str, term: str, results: int, elapsed_ms: int
-    ) -> None:
+    def record_success(self, indexer_id: str, term: str, results: int, elapsed_ms: int) -> None:
         with self._lock:
             stats = self._stats_of(indexer_id)
             stats.searches += 1
@@ -89,18 +85,14 @@ class SearchRecorder:
             stats.last_elapsed_ms = elapsed_ms
         self._remember(indexer_id, term, OUTCOME_OK, results, elapsed_ms)
 
-    def record_cache_hit(
-        self, indexer_id: str, term: str, results: int
-    ) -> None:
+    def record_cache_hit(self, indexer_id: str, term: str, results: int) -> None:
         with self._lock:
             stats = self._stats_of(indexer_id)
             stats.searches += 1
             stats.cache_hits += 1
         self._remember(indexer_id, term, OUTCOME_CACHE, results)
 
-    def record_failure(
-        self, indexer_id: str, term: str, error: str, rate_limited: bool
-    ) -> None:
+    def record_failure(self, indexer_id: str, term: str, error: str, rate_limited: bool) -> None:
         with self._lock:
             stats = self._stats_of(indexer_id)
             stats.searches += 1

@@ -72,9 +72,7 @@ class CardigannSource:
         }
         return [by_name[name] for name in sorted(by_name)]
 
-    def _create(
-        self, dependencies: IndexerDependencies, path: Path
-    ) -> CardigannIndexer | None:
+    def _create(self, dependencies: IndexerDependencies, path: Path) -> CardigannIndexer | None:
         try:
             definition = self._cache.parse(path.read_text(encoding="utf-8"))
         except Exception:

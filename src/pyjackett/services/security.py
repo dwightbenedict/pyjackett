@@ -61,27 +61,20 @@ class SecurityService:
             self._config.admin_username = DEFAULT_CREDENTIAL
             changed = True
         if not self._config.admin_password:
-            self._config.admin_password = self.hash_password(
-                DEFAULT_CREDENTIAL
-            )
+            self._config.admin_password = self.hash_password(DEFAULT_CREDENTIAL)
             changed = True
         return changed
 
     @property
     def uses_default_credentials(self) -> bool:
         return self._config.admin_username == DEFAULT_CREDENTIAL and (
-            self._config.admin_password
-            == self.hash_password(DEFAULT_CREDENTIAL)
+            self._config.admin_password == self.hash_password(DEFAULT_CREDENTIAL)
         )
 
-    def check_credentials(
-        self, username: str | None, password: str | None
-    ) -> bool:
+    def check_credentials(self, username: str | None, password: str | None) -> bool:
         expected = (self._config.admin_username or "").encode()
         given = (username or "").encode()
-        return hmac.compare_digest(given, expected) and (
-            self.check_authorised(password)
-        )
+        return hmac.compare_digest(given, expected) and (self.check_authorised(password))
 
     def set_username(self, username: str | None) -> None:
         username = (username or "").strip()
@@ -98,9 +91,7 @@ class SecurityService:
 
     def _signature(self, expires: str) -> str:
         secret = f"{self._config.api_key}{self._config.instance_id}"
-        return hmac.new(
-            secret.encode(), expires.encode(), hashlib.sha256
-        ).hexdigest()
+        return hmac.new(secret.encode(), expires.encode(), hashlib.sha256).hexdigest()
 
     def create_session_cookie(self) -> str:
         lifetime = SESSION_DAYS * SECONDS_PER_DAY

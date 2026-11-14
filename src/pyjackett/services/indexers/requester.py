@@ -39,8 +39,7 @@ def check_site_down(response: WebResult) -> None:
     if response.status in SITE_DOWN_STATUSES:
         url = response.request.url if response.request else "tracker"
         raise RuntimeError(
-            f"Request to {url} failed (Error {response.status}) "
-            "- The tracker seems to be down."
+            f"Request to {url} failed (Error {response.status}) - The tracker seems to be down."
         )
 
 
@@ -80,9 +79,7 @@ class WebRequester:
         """Adopt new cookies and persist them if something changed."""
         updated = self.resolve_cookies(_join(cookie_override, new_cookies))
         if self._owner.cookie_header != updated:
-            logger.debug(
-                "updating Cookies %s => %s", self._owner.cookie_header, updated
-            )
+            logger.debug("updating Cookies %s => %s", self._owner.cookie_header, updated)
             self._owner.cookie_header = updated
             if self._owner.is_configured:
                 self._owner.config_changed()
@@ -103,11 +100,7 @@ class WebRequester:
         request = WebRequest(
             url=url,
             type=method,
-            cookies=(
-                cookie_override
-                if cookie_override is not None
-                else self._owner.cookie_header
-            ),
+            cookies=(cookie_override if cookie_override is not None else self._owner.cookie_header),
             post_data=list(data or []),
             referer=referer,
             headers=dict(headers or {}),
@@ -117,9 +110,7 @@ class WebRequester:
         )
         return await self.send(request, cookie_override)
 
-    async def send(
-        self, request: WebRequest, cookie_override: str | None = None
-    ) -> WebResult:
+    async def send(self, request: WebRequest, cookie_override: str | None = None) -> WebResult:
         request.encoding = self._owner.encoding
         logger.debug("%s %s %s", self._owner.name, request.type, request.url)
         result = await self._client.get_result(request)
@@ -174,9 +165,7 @@ class WebRequester:
                 accumulate_cookies,
             )
             if accumulate_cookies:
-                accumulated = self.resolve_cookies(
-                    _join(override_cookies, response.cookies)
-                )
+                accumulated = self.resolve_cookies(_join(override_cookies, response.cookies))
                 self._owner.cookie_header = accumulated
                 override_cookies = response.cookies = accumulated
             if override_cookies is not None and response.cookies is None:
@@ -217,9 +206,7 @@ class WebRequester:
         request = WebRequest(
             url=url,
             type=RequestType.POST,
-            cookies=cookies
-            if cookies is not None
-            else self._owner.cookie_header,
+            cookies=cookies if cookies is not None else self._owner.cookie_header,
             referer=referer,
             post_data=list(data),
             encoding=self._owner.encoding,
@@ -228,9 +215,7 @@ class WebRequester:
         response = await self._client.get_result(request)
         check_site_down(response)
         if accumulate_cookies:
-            response.cookies = self.resolve_cookies(
-                _join(request.cookies, response.cookies)
-            )
+            response.cookies = self.resolve_cookies(_join(request.cookies, response.cookies))
         first_call_cookies = response.cookies
         if response.is_redirect:
             response = await self.follow_if_redirect(
@@ -242,7 +227,5 @@ class WebRequester:
             )
         if return_cookies_from_first_call:
             later = response.cookies if accumulate_cookies else None
-            response.cookies = self.resolve_cookies(
-                _join(first_call_cookies, later)
-            )
+            response.cookies = self.resolve_cookies(_join(first_call_cookies, later))
         return response

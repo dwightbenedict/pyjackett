@@ -90,9 +90,7 @@ class TorznabQuery:
     @property
     def is_movie_search(self) -> bool:
         is_potato = self.query_type == "TorrentPotato"
-        return self.query_type == "movie" or (
-            is_potato and not is_blank(self.search_term)
-        )
+        return self.query_type == "movie" or (is_potato and not is_blank(self.search_term))
 
     @property
     def is_music_search(self) -> bool:
@@ -218,9 +216,7 @@ class TorznabQuery:
     def clone(self) -> TorznabQuery:
         duplicate = copy.copy(self)
         duplicate.categories = list(self.categories)
-        duplicate._word_cache = (
-            list(self._word_cache) if self._word_cache else None
-        )
+        duplicate._word_cache = list(self._word_cache) if self._word_cache else None
         return duplicate
 
     def create_fallback(self, search: str) -> TorznabQuery:

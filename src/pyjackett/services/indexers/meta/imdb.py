@@ -30,9 +30,7 @@ class ImdbResolver(Protocol):
 class OmdbResolver:
     """Looks up movie titles on the OMDb API."""
 
-    def __init__(
-        self, client: WebClient, api_key: str, api_url: str | None
-    ) -> None:
+    def __init__(self, client: WebClient, api_key: str, api_url: str | None) -> None:
         self._client = client
         self._api_key = api_key
         self._api_url = api_url or DEFAULT_OMDB_URL
@@ -41,9 +39,7 @@ class OmdbResolver:
         if not imdb_id.startswith("tt"):
             imdb_id = f"tt{imdb_id}"
         url = urljoin(self._api_url, f"/?apikey={self._api_key}&i={imdb_id}")
-        result = await self._client.get_result(
-            WebRequest(url=url, encoding="utf-8")
-        )
+        result = await self._client.get_result(WebRequest(url=url, encoding="utf-8"))
         try:
             return result.json().get("Title")
         except (ValueError, AttributeError):
@@ -84,9 +80,5 @@ class ImdbSupport:
         if title is None:
             return perfect
         variants = title_variants(title)
-        matched = [
-            r
-            for r in remaining
-            if any(contains_ignore_case(r.title, v) for v in variants)
-        ]
+        matched = [r for r in remaining if any(contains_ignore_case(r.title, v) for v in variants)]
         return perfect + matched

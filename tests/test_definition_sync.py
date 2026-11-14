@@ -65,9 +65,7 @@ def store(downloaded):
 
 
 async def test_a_round_downloads_what_is_new_and_then_nothing(store):
-    feed = FakeFeed(
-        {"a.yml": ("1", definition("a")), "b.yml": ("1", definition("b"))}
-    )
+    feed = FakeFeed({"a.yml": ("1", definition("a")), "b.yml": ("1", definition("b"))})
     updater = DefinitionUpdater(feed, store)
     first = await updater.update()
     assert first.added == ("a.yml", "b.yml")
@@ -88,9 +86,7 @@ async def test_a_new_revision_is_downloaded_again(store, downloaded):
 
 
 async def test_definitions_gone_upstream_are_removed(store):
-    feed = FakeFeed(
-        {"a.yml": ("1", definition("a")), "b.yml": ("1", definition("b"))}
-    )
+    feed = FakeFeed({"a.yml": ("1", definition("a")), "b.yml": ("1", definition("b"))})
     updater = DefinitionUpdater(feed, store)
     await updater.update()
     del feed.files["b.yml"]
@@ -100,9 +96,7 @@ async def test_definitions_gone_upstream_are_removed(store):
     assert store.revisions() == {"a.yml": "1"}
 
 
-async def test_a_definition_that_does_not_parse_keeps_the_working_one(
-    store, downloaded
-):
+async def test_a_definition_that_does_not_parse_keeps_the_working_one(store, downloaded):
     feed = FakeFeed({"a.yml": ("1", definition("a"))})
     updater = DefinitionUpdater(feed, store)
     await updater.update()
@@ -142,9 +136,7 @@ async def test_an_empty_listing_never_wipes_the_store(store):
 
 
 def github(handler):
-    session = HttpSession(
-        ServerConfig(), client_factory=fakes.mock_network(handler)
-    )
+    session = HttpSession(ServerConfig(), client_factory=fakes.mock_network(handler))
     return GitHubDefinitionFeed(session, "o/r", "main", "defs")
 
 
@@ -221,9 +213,7 @@ class Reloads:
 
 def sync_task(updater, config=None, reloads=None):
     reloads = reloads or Reloads()
-    task = DefinitionSyncTask(
-        updater, config or ServerConfig(), FakeClock(), reloads
-    )
+    task = DefinitionSyncTask(updater, config or ServerConfig(), FakeClock(), reloads)
     return task, reloads
 
 
@@ -294,9 +284,7 @@ def make_context(tmp_path, **options):
     )
 
 
-async def test_reload_adds_new_and_swaps_changed_definitions(
-    tmp_path, downloaded
-):
+async def test_reload_adds_new_and_swaps_changed_definitions(tmp_path, downloaded):
     downloaded.mkdir()
     (downloaded / "one.yml").write_text(definition("one"), "utf-8")
     context = make_context(tmp_path)
@@ -328,17 +316,13 @@ async def test_reload_keeps_the_saved_configuration(tmp_path, downloaded):
     await context.close()
 
 
-def test_a_later_definition_folder_overrides_an_earlier_one(
-    tmp_path, downloaded
-):
+def test_a_later_definition_folder_overrides_an_earlier_one(tmp_path, downloaded):
     downloaded.mkdir()
     (downloaded / "one.yml").write_text(definition("one", "Old"), "utf-8")
     newer = tmp_path / "newer"
     newer.mkdir()
     (newer / "one.yml").write_text(definition("one", "New"), "utf-8")
-    context = build_context(
-        tmp_path, extra_definition_dirs=[newer], include_bundled=False
-    )
+    context = build_context(tmp_path, extra_definition_dirs=[newer], include_bundled=False)
     context.indexers.init_indexers()
     assert context.indexers.get_indexer("one").name == "New"
 

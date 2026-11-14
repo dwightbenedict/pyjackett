@@ -69,9 +69,7 @@ class CategoryMappings:
         """
         tracker_category = str(tracker_category)
         self._mappings.append(
-            CategoryMapping(
-                tracker_category, tracker_category_desc, torznab_category.id
-            )
+            CategoryMapping(tracker_category, tracker_category_desc, torznab_category.id)
         )
         self._add_to_tree(torznab_category)
         if tracker_category_desc is None:
@@ -80,9 +78,7 @@ class CategoryMappings:
             _custom_category_number(tracker_category) + CUSTOM_CATEGORY_OFFSET,
             tracker_category_desc,
         )
-        self._mappings.append(
-            CategoryMapping(tracker_category, tracker_category_desc, custom.id)
-        )
+        self._mappings.append(CategoryMapping(tracker_category, tracker_category_desc, custom.id))
         self._add_to_tree(custom)
 
     def _add_to_tree(self, category: TorznabCategory) -> None:
@@ -99,9 +95,7 @@ class CategoryMappings:
         if category.id not in self._nodes:
             self._add_node(category)
 
-    def _add_child(
-        self, parent: TorznabCategory, child: TorznabCategory
-    ) -> None:
+    def _add_child(self, parent: TorznabCategory, child: TorznabCategory) -> None:
         node = self._nodes.get(parent.id) or self._add_node(parent)
         children = self._child_ids[node.id]
         if child.id != node.id and child.id not in children:
@@ -137,9 +131,7 @@ class CategoryMappings:
         sorted_tree = []
         for category in self._tree:
             copy = category.copy_without_subcategories()
-            copy.subcategories.extend(
-                sorted(category.subcategories, key=lambda c: c.id)
-            )
+            copy.subcategories.extend(sorted(category.subcategories, key=lambda c: c.id))
             sorted_tree.append(copy)
         return sorted(sorted_tree, key=_tree_sort_key)
 
@@ -173,9 +165,7 @@ class CategoryMappings:
                 expanded.extend(c.id for c in parent.subcategories)
             elif map_children_to_parent:
                 probe = TorznabCategory(category_id, "")
-                owner = next(
-                    (c for c in self._tree if c.contains(probe)), None
-                )
+                owner = next((c for c in self._tree if c.contains(probe)), None)
                 if owner is not None:
                     expanded.append(owner.id)
         return list(dict.fromkeys(expanded))
@@ -184,11 +174,7 @@ class CategoryMappings:
         self, query: TorznabQuery, map_children_to_parent: bool = False
     ) -> list[str]:
         wanted = self.expand_query_categories(query, map_children_to_parent)
-        matches = (
-            m.tracker_category
-            for m in self._mappings
-            if m.torznab_category in wanted
-        )
+        matches = (m.tracker_category for m in self._mappings if m.torznab_category in wanted)
         return list(dict.fromkeys(matches))
 
     def to_torznab(self, tracker_category: str | None) -> list[int]:
@@ -208,8 +194,7 @@ class CategoryMappings:
         return [
             m.torznab_category
             for m in self._mappings
-            if m.tracker_category_desc
-            and m.tracker_category_desc.lower() == needle
+            if m.tracker_category_desc and m.tracker_category_desc.lower() == needle
         ]
 
 

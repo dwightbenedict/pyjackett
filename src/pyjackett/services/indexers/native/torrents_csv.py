@@ -21,10 +21,7 @@ EMPTY_SEARCH_MAGNET = "magnet:?xt=urn:btih:" + "3" * 40
 class TorrentsCsv(NativeIndexer):
     id = "torrentscsv"
     name = "Torrents.csv"
-    description = (
-        "Torrents.csv is a self-hostable, open source torrent search engine "
-        "and database"
-    )
+    description = "Torrents.csv is a self-hostable, open source torrent search engine and database"
     default_site_link = "https://torrents-csv.com/"
     legacy_site_links = ("https://torrents-csv.ml/",)
     language = "en-US"
@@ -47,9 +44,7 @@ class TorrentsCsv(NativeIndexer):
         if len(text) < MIN_SEARCH_LENGTH:
             return []
         parameters = build_query_string([("size", PAGE_SIZE), ("q", text)])
-        response = await self.requester.request_with_retry(
-            f"{self._search_endpoint}?{parameters}"
-        )
+        response = await self.requester.request_with_retry(f"{self._search_endpoint}?{parameters}")
         try:
             torrents = json.loads(response.content_string)["torrents"]
             releases = [self._to_release(torrent) for torrent in torrents]
@@ -79,8 +74,7 @@ class TorrentsCsv(NativeIndexer):
     def _empty_search_notice(self) -> ReleaseInfo:
         """The API cannot list recent torrents; explain it as a result."""
         return ReleaseInfo(
-            title="[NOT IMPLEMENTED] Empty search is unsupported in this "
-            "indexer",
+            title="[NOT IMPLEMENTED] Empty search is unsupported in this indexer",
             guid=self.site_link,
             details=self.site_link,
             magnet_uri=EMPTY_SEARCH_MAGNET,

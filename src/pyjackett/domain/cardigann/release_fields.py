@@ -120,14 +120,10 @@ def _apply_categories(categories: list[int], value: str, ctx: FieldContext):
         )
     if categories:
         keep_existing = release.category and "noappend" not in ctx.modifiers
-        merged = (
-            [*release.category, *categories] if keep_existing else (categories)
-        )
+        merged = [*release.category, *categories] if keep_existing else (categories)
         release.category = list(dict.fromkeys(merged))
     if not is_blank(value) and not release.category:
-        logger.warning(
-            "[%s] Invalid category for value: '%s'", ctx.indexer_id, value
-        )
+        logger.warning("[%s] Invalid category for value: '%s'", ctx.indexer_id, value)
         return value
     return ",".join(str(c) for c in release.category)
 
@@ -264,9 +260,7 @@ HANDLERS: dict[str, Handler] = {
 }
 
 
-def parse_field(
-    value: str, field_name: str, context: FieldContext
-) -> str | None:
+def parse_field(value: str, field_name: str, context: FieldContext) -> str | None:
     """Store ``value`` on the release; unknown names are template-only."""
     handler = HANDLERS.get(field_name)
     return handler(value, context) if handler else value

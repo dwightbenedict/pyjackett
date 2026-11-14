@@ -40,9 +40,7 @@ class NativeIndexer(BaseWebIndexer):
     def build_configuration(self) -> None:
         """Add the indexer specific items to ``self.config_data``."""
 
-    async def apply_configuration(
-        self, config: list[dict[str, Any]]
-    ) -> ConfigurationStatus:
+    async def apply_configuration(self, config: list[dict[str, Any]]) -> ConfigurationStatus:
         """Accept the configuration if a test search returns releases."""
         self.load_values_from_json(config)
         await self.authenticate()

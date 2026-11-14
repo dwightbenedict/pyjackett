@@ -16,9 +16,7 @@ Outcome = dict[str, Any]
 class BulkIndexerOperations:
     """Add, test and delete several indexers; one failure stops no other."""
 
-    def __init__(
-        self, indexers: IndexerManager, test_runner: IndexerTestRunner
-    ) -> None:
+    def __init__(self, indexers: IndexerManager, test_runner: IndexerTestRunner) -> None:
         self._indexers = indexers
         self._test_runner = test_runner
 
@@ -41,9 +39,7 @@ class BulkIndexerOperations:
         self._indexers.delete_indexer(indexer_id)
 
     @staticmethod
-    async def _run(
-        ids: list[str], operation: Callable[[str], Awaitable[None]]
-    ) -> list[Outcome]:
+    async def _run(ids: list[str], operation: Callable[[str], Awaitable[None]]) -> list[Outcome]:
         async def attempt(indexer_id: str) -> Outcome:
             try:
                 await operation(indexer_id)

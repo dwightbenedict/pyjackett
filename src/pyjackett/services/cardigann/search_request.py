@@ -26,9 +26,7 @@ class SearchRequest:
         return self.method is RequestType.GET
 
 
-def restrict_categories(
-    mapped: list[str], path: SearchPathBlock
-) -> list[str] | None:
+def restrict_categories(mapped: list[str], path: SearchPathBlock) -> list[str] | None:
     """Categories to search in ``path``; None if the path must be skipped.
 
     A path listing categories only runs when one of them was requested; a
@@ -84,9 +82,7 @@ def build_search_request(
     method = request_type(path.method)
     pairs: list[tuple[str, str]] = []
     if path.inheritinputs:
-        pairs += _input_pairs(
-            search.inputs, variables, search.allow_empty_inputs
-        )
+        pairs += _input_pairs(search.inputs, variables, search.allow_empty_inputs)
     pairs += _input_pairs(path.inputs, variables, search.allow_empty_inputs)
     if method is RequestType.GET and pairs:
         url += "?" + build_query_string(pairs, host.encoding)

@@ -90,18 +90,14 @@ def test_expression_filters_are_cached_with_a_bound():
 def test_plain_routes_answer_with_http_errors(client, api_key):
     base = "/api/v2.0/indexers"
     assert client.get(f"{base}/faketracker/results/potato").status_code == 401
-    unknown = client.get(
-        f"{base}/nope/results/potato", params={"apikey": api_key}
-    )
+    unknown = client.get(f"{base}/nope/results/potato", params={"apikey": api_key})
     assert unknown.status_code == 404
     assert unknown.text == "Indexer is not supported"
 
 
 def test_torznab_routes_answer_with_xml_errors(client, api_key):
     base = "/api/v2.0/indexers"
-    reply = client.get(
-        f"{base}/nope/results/torznab/api", params={"apikey": api_key}
-    )
+    reply = client.get(f"{base}/nope/results/torznab/api", params={"apikey": api_key})
     assert reply.status_code == 200
     assert 'code="201"' in reply.text
 

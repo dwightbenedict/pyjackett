@@ -21,19 +21,13 @@ Modifier = Callable[[str], str] | None
 _LOGIC_FUNCTIONS = ("and", "or", "eq", "ne")
 _FUNCTIONS_WITH_LITERALS = ("eq", "ne")
 
-_RE_REPLACE = regex.compile(
-    r'\{\{\s*re_replace\s+(\..+?)\s+"(.*?)"\s+"(.*?)"\s*\}\}'
-)
+_RE_REPLACE = regex.compile(r'\{\{\s*re_replace\s+(\..+?)\s+"(.*?)"\s+"(.*?)"\s*\}\}')
 _JOIN = regex.compile(r'\{\{\s*join\s+(\..+?)\s+"(.*?)"\s*\}\}')
 # a logic function followed by 2+ of: (.var) or .var or "string literal"
 _LOGIC = regex.compile(
-    r"\b("
-    + "|".join(_LOGIC_FUNCTIONS)
-    + r')(?:\s+(\(?\.[^\)\s]+\)?|"[^"]+")){2,}'
+    r"\b(" + "|".join(_LOGIC_FUNCTIONS) + r')(?:\s+(\(?\.[^\)\s]+\)?|"[^"]+")){2,}'
 )
-_IF_ELSE = regex.compile(
-    r"\{\{\s*if\s*(.+?)\s*\}\}(.*?)\{\{\s*else\s*\}\}(.*?)\{\{\s*end\s*\}\}"
-)
+_IF_ELSE = regex.compile(r"\{\{\s*if\s*(.+?)\s*\}\}(.*?)\{\{\s*else\s*\}\}(.*?)\{\{\s*end\s*\}\}")
 _RANGE = regex.compile(
     r"\{\{\s*range\s*(((?<index>\$.+?),)((\s*(?<element>.+?)\s*(:=)\s*)))?"
     r"(?<variable>.+?)\s*\}\}(?<prefix>.*?)\{\{\.\}\}"
@@ -93,9 +87,7 @@ def _is_string_literal(parameter: str) -> bool:
     return parameter.startswith('"')
 
 
-def _first_by_emptiness(
-    parameters: list[str], variables: Variables, stop_when_blank: bool
-) -> str:
+def _first_by_emptiness(parameters: list[str], variables: Variables, stop_when_blank: bool) -> str:
     """``and`` stops at the first blank value, ``or`` at the first filled."""
     result = ""
     for parameter in parameters:
@@ -142,11 +134,7 @@ def _expand_logic_functions(template: str, variables: Variables) -> str:
             # eq/ne take exactly two parameters
             length = match.starts(2)[2] - match.start()
         result = _logic_result(name, parameters, variables)
-        template = (
-            template[: match.start()]
-            + result
-            + template[match.start() + length :]
-        )
+        template = template[: match.start()] + result + template[match.start() + length :]
         match = _LOGIC.search(template)
     return template
 
@@ -169,8 +157,7 @@ def _expand_if_else(template: str, variables: Variables) -> str:
         condition, on_true, on_false = match.groups()
         if not condition.startswith("."):
             raise NotImplementedError(
-                f"CardigannIndexer: Condition operation '{condition}' "
-                "not implemented"
+                f"CardigannIndexer: Condition operation '{condition}' not implemented"
             )
         value = variables[condition]
         return on_true if _is_truthy(condition, value) else on_false

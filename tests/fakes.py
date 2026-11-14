@@ -31,9 +31,7 @@ class Response:
         headers: dict[str, str] | None = None,
     ) -> None:
         self.status_code = status_code
-        self.content = (
-            content if content is not None else (text or "").encode()
-        )
+        self.content = content if content is not None else (text or "").encode()
         self.headers = Headers(list((headers or {}).items()))
 
 

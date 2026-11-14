@@ -80,9 +80,7 @@ class WebResult:
     @property
     def content_string(self) -> str:
         if self._text is None:
-            self._text = self.content_bytes.decode(
-                self.encoding, errors="replace"
-            )
+            self._text = self.content_bytes.decode(self.encoding, errors="replace")
         return self._text
 
     @content_string.setter

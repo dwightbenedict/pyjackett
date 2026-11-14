@@ -142,7 +142,5 @@ def manual_search_query(params: Mapping[str, object]) -> TorznabQuery:
     ):
         value = params.get(name)
         if value not in (None, ""):
-            setattr(
-                query, attribute, value if name == "imdbid" else int(value)
-            )
+            setattr(query, attribute, value if name == "imdbid" else int(value))
     return _imdb_only_query(query) or query

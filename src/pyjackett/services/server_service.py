@@ -15,9 +15,7 @@ BLACKHOLE_ACTION = "bh"
 class ServerService:
     """Builds the URLs Torznab clients use to download through us."""
 
-    def __init__(
-        self, config: ServerConfig, protector: ProtectionService
-    ) -> None:
+    def __init__(self, config: ServerConfig, protector: ProtectionService) -> None:
         self._config = config
         self._protector = protector
 

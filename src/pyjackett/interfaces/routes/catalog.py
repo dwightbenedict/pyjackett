@@ -71,13 +71,9 @@ async def list_indexers(
         alias="type",
         description="`public`, `semi-public` or `private`.",
     ),
-    language: str | None = Query(
-        None, description="Language prefix, e.g. `en` or `en-US`."
-    ),
+    language: str | None = Query(None, description="Language prefix, e.g. `en` or `en-US`."),
     tag: str | None = Query(None, description="Only indexers with this tag."),
-    q: str | None = Query(
-        None, description="Part of the name or id, ignoring case."
-    ),
+    q: str | None = Query(None, description="Part of the name or id, ignoring case."),
 ):
     """Every definition PyJackett knows, configured or not, filterable."""
     return [

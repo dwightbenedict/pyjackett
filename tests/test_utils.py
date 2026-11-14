@@ -61,9 +61,9 @@ def test_dotnet_format_conversion(layout, expected):
 
 def test_time_ago():
     now = datetime(2024, 5, 10, 12, 0).astimezone()
-    assert dates.from_time_ago(
-        "2 hours 30 minutes ago", now
-    ) == now - timedelta(hours=2, minutes=30)
+    assert dates.from_time_ago("2 hours 30 minutes ago", now) == now - timedelta(
+        hours=2, minutes=30
+    )
     assert dates.from_time_ago("1 day ago", now) == now - timedelta(days=1)
 
 

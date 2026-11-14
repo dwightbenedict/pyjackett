@@ -130,9 +130,7 @@ def build_context(
     )
     cache = ResultsCache(config, clock, cache_limit_from(environ))
     stats = SearchRecorder(clock)
-    config_service = IndexerConfigurationService(
-        IndexerConfigStore(data_path), protector
-    )
+    config_service = IndexerConfigurationService(IndexerConfigStore(data_path), protector)
     dependencies = IndexerDependencies(
         protector=protector,
         cache=cache,
@@ -151,10 +149,7 @@ def build_context(
         definition_dirs.insert(0, BUNDLED_DEFINITIONS_DIR)
     definition_dirs += extra_definition_dirs or []
     definitions = DefinitionCache(
-        Path(
-            environ.get(DEFINITION_CACHE_ENV)
-            or data_path / DEFINITION_CACHE_FILE
-        )
+        Path(environ.get(DEFINITION_CACHE_ENV) or data_path / DEFINITION_CACHE_FILE)
     )
     registry = IndexerRegistry()
     manager = IndexerManager(
@@ -163,18 +158,14 @@ def build_context(
         [NativeSource(), CardigannSource(definition_dirs, definitions)],
         registry,
         MetaIndexerFactory(dependencies, config, registry.values()),
-        PublicIndexerProvisioner(
-            configure_public, public_indexers_from(environ, default_public)
-        ),
+        PublicIndexerProvisioner(configure_public, public_indexers_from(environ, default_public)),
         config,
     )
     test_runner = IndexerTestRunner(manager)
     definition_sync = None
     if sync_definitions:
         definition_sync = DefinitionSyncTask(
-            DefinitionUpdater(
-                GitHubDefinitionFeed(session), DefinitionStore(downloaded_dir)
-            ),
+            DefinitionUpdater(GitHubDefinitionFeed(session), DefinitionStore(downloaded_dir)),
             config,
             clock,
             manager.reload_definitions,

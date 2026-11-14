@@ -17,9 +17,7 @@ from pyjackett.domain.text import normalize_space
 
 RFC1123Z_FORMAT = "%a, %d %b %Y %H:%M:%S %z"
 
-_RFC1123Z = re.compile(
-    r"^[A-Za-z]{3}, \d{2} [A-Za-z]{3} \d{4} \d{2}:\d{2}:\d{2} [+-]\d{4}$"
-)
+_RFC1123Z = re.compile(r"^[A-Za-z]{3}, \d{2} [A-Za-z]{3} \d{4} \d{2}:\d{2}:\d{2} [+-]\d{4}$")
 _TIME_AGO = re.compile(r"(?i)\bago")
 _TODAY = re.compile(r"(?i)\btoday(?:[\s,]+(?:at){0,1}\s*|[\s,]*|$)")
 _TOMORROW = re.compile(r"(?i)\btomorrow(?:[\s,]+(?:at){0,1}\s*|[\s,]*|$)")
@@ -29,9 +27,7 @@ _DAY_OF_WEEK = re.compile(
     r"\s+at\s+"
 )
 _MISSING_YEAR = re.compile(r"^(\d{1,2}-\d{1,2})(\s|$)")
-_MISSING_YEAR_WITH_TIME = re.compile(
-    r"^(\d{1,2}\s+\w{3})\s+(\d{1,2}:\d{1,2}.*)$"
-)
+_MISSING_YEAR_WITH_TIME = re.compile(r"^(\d{1,2}\s+\w{3})\s+(\d{1,2}:\d{1,2}.*)$")
 _TIME_AGO_PART = re.compile(r"\s*?([\d.]+)\s*?([^\d\s.]+)\s*?")
 _WEEKDAYS = (
     "monday",
@@ -89,9 +85,7 @@ def from_time_ago(text: str, relative_from: datetime | None = None):
         text = text.replace(noise, "")
     total = timedelta()
     for amount, unit in _TIME_AGO_PART.findall(text):
-        total += timedelta(
-            seconds=coerce_float(amount) * _unit_to_seconds(unit)
-        )
+        total += timedelta(seconds=coerce_float(amount) * _unit_to_seconds(unit))
     return now - total
 
 
@@ -99,9 +93,7 @@ def from_fuzzy_time(
     text: str, date_format: str | None = None, now: datetime | None = None
 ) -> datetime:
     """Parse an arbitrary date/time string; missing parts default to today."""
-    today = (now or local_now()).replace(
-        hour=0, minute=0, second=0, microsecond=0, tzinfo=None
-    )
+    today = (now or local_now()).replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=None)
     try:
         parsed = dateutil_parser.parse(
             text, fuzzy=True, dayfirst=date_format == "UK", default=today
@@ -111,9 +103,7 @@ def from_fuzzy_time(
     return to_local(parsed)
 
 
-def _from_fuzzy_past_time(
-    text: str, date_format: str | None, now: datetime
-) -> datetime:
+def _from_fuzzy_past_time(text: str, date_format: str | None, now: datetime) -> datetime:
     result = from_fuzzy_time(text, date_format, now)
     return result.replace(year=result.year - 1) if result > now else result
 
@@ -122,14 +112,10 @@ def _time_of_day(text: str) -> timedelta:
     if not text.strip():
         return timedelta()
     parsed = dateutil_parser.parse(text)
-    return timedelta(
-        hours=parsed.hour, minutes=parsed.minute, seconds=parsed.second
-    )
+    return timedelta(hours=parsed.hour, minutes=parsed.minute, seconds=parsed.second)
 
 
-def _relative_day(
-    match: re.Match, text: str, now: datetime, day_offset: int
-) -> datetime:
+def _relative_day(match: re.Match, text: str, now: datetime, day_offset: int) -> datetime:
     midnight = now.replace(hour=0, minute=0, second=0, microsecond=0)
     clock = _time_of_day(text.replace(match.group(0), ""))
     return midnight + clock + timedelta(days=day_offset)
@@ -162,9 +148,7 @@ def _parse_relative_words(text: str, now: datetime) -> datetime | None:
     return None
 
 
-def _parse_missing_year(
-    text: str, date_format: str | None, now: datetime
-) -> datetime | None:
+def _parse_missing_year(text: str, date_format: str | None, now: datetime) -> datetime | None:
     match = _MISSING_YEAR.match(text)
     if match:
         date = match.group(1)
@@ -177,9 +161,7 @@ def _parse_missing_year(
     return None
 
 
-def _parse_special_cases(
-    text: str, date_format: str | None, now: datetime
-) -> datetime | None:
+def _parse_special_cases(text: str, date_format: str | None, now: datetime) -> datetime | None:
     exact = _parse_rfc1123z(text)
     if exact is not None:
         return exact
@@ -205,14 +187,10 @@ def from_unknown(
         special = _parse_special_cases(text, date_format, now)
         return special or from_fuzzy_time(text, date_format, now)
     except Exception as error:
-        raise ValueError(
-            f'DateTime parsing failed for "{text}": {error}'
-        ) from error
+        raise ValueError(f'DateTime parsing failed for "{text}": {error}') from error
 
 
-def parse_layout(
-    text: str, layout: str, relative_from: datetime | None = None
-) -> datetime:
+def parse_layout(text: str, layout: str, relative_from: datetime | None = None) -> datetime:
     """Parse ``text`` with a definition layout (the dateparse filter)."""
     now = relative_from or local_now()
     parsed, used_format = parse_with_layout(normalize_space(text), layout)

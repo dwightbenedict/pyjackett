@@ -37,11 +37,7 @@ class PublicIndexerProvisioner:
             return 0
         candidates = list(indexers)
         self._warn_about_unknown(candidates)
-        pending = [
-            i
-            for i in candidates
-            if self._is_wanted(i) and self._needs_provisioning(i)
-        ]
+        pending = [i for i in candidates if self._is_wanted(i) and self._needs_provisioning(i)]
         for indexer in pending:
             self._configure(indexer)
         logger.info("Configured %d public indexers", len(pending))
@@ -75,8 +71,4 @@ class PublicIndexerProvisioner:
 
     @staticmethod
     def _needs_provisioning(indexer: BaseIndexer) -> bool:
-        return (
-            indexer.type == PUBLIC_TYPE
-            and not indexer.is_meta
-            and not indexer.is_configured
-        )
+        return indexer.type == PUBLIC_TYPE and not indexer.is_meta and not indexer.is_configured

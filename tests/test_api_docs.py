@@ -61,9 +61,7 @@ def test_every_operation_is_fully_described(spec):
         assert operation.get("operationId"), where
         assert operation.get("summary"), where
         assert operation.get("description") or operation["summary"], where
-        assert any(code.startswith("2") for code in operation["responses"]), (
-            where
-        )
+        assert any(code.startswith("2") for code in operation["responses"]), where
         ids.append(operation["operationId"])
     assert len(ids) == len(set(ids))
     assert all(i[0].islower() and "_" not in i for i in ids)
@@ -97,9 +95,7 @@ def test_path_parameters_are_described(spec):
 
 
 def test_torznab_documents_its_query_parameters(spec):
-    operation = spec["paths"][f"{V1}/indexers/{{indexer_id}}/results/torznab"][
-        "get"
-    ]
+    operation = spec["paths"][f"{V1}/indexers/{{indexer_id}}/results/torznab"]["get"]
     parameters = {p["name"]: p for p in operation["parameters"]}
     for name in (
         "t",
@@ -125,18 +121,14 @@ def test_json_search_documents_its_parameters_and_models(spec):
     search = spec["paths"][f"{V1}/indexers/{{indexer_id}}/results"]["get"]
     names = {p["name"] for p in search["parameters"]}
     assert {"query", "Category[]", "Tracker[]", "imdbid"} <= names
-    schema = search["responses"]["200"]["content"]["application/json"][
-        "schema"
-    ]
+    schema = search["responses"]["200"]["content"]["application/json"]["schema"]
     assert schema == {"$ref": "#/components/schemas/ManualSearchResponse"}
     release = spec["components"]["schemas"]["Release"]["properties"]
     assert release["size"]["description"] == "Bytes."
 
 
 def test_stream_is_documented_as_ndjson(spec):
-    stream = spec["paths"][f"{V1}/indexers/{{indexer_id}}/results/stream"][
-        "get"
-    ]
+    stream = spec["paths"][f"{V1}/indexers/{{indexer_id}}/results/stream"]["get"]
     assert "application/x-ndjson" in stream["responses"]["200"]["content"]
 
 
@@ -160,33 +152,27 @@ def test_discovery_filters_are_described(spec):
 def test_documented_models_match_what_the_api_returns(client, api_key):
     client.post(f"{V1}/indexers/faketracker/add")
     listing = client.get(f"{V1}/indexers").json()
-    properties = client.get(f"{V1}/openapi.json").json()["components"][
-        "schemas"
-    ]["IndexerSummary"]["properties"]
+    properties = client.get(f"{V1}/openapi.json").json()["components"]["schemas"]["IndexerSummary"][
+        "properties"
+    ]
     assert set(listing[0]) == set(properties)
     reply = client.get(
         f"{V1}/indexers/faketracker/results",
         params={"apikey": api_key, "query": "movie"},
     ).json()
-    release_fields = client.get(f"{V1}/openapi.json").json()["components"][
-        "schemas"
-    ]["Release"]["properties"]
+    release_fields = client.get(f"{V1}/openapi.json").json()["components"]["schemas"]["Release"][
+        "properties"
+    ]
     assert set(reply["results"][0]) == set(release_fields)
 
 
 def test_jackett_prefix_mirrors_every_v1_operation(spec):
     v1 = {p.removeprefix(V1): p for p in spec["paths"] if p.startswith(V1)}
-    twins = {
-        p.removeprefix("/api/v2.0"): p
-        for p in spec["paths"]
-        if p.startswith("/api/v2.0")
-    }
+    twins = {p.removeprefix("/api/v2.0"): p for p in spec["paths"] if p.startswith("/api/v2.0")}
     assert v1 and set(twins) == set(v1)
     for suffix, path in twins.items():
         for method, operation in spec["paths"][path].items():
             original = spec["paths"][v1[suffix]][method]
             assert operation["tags"] == ["jackett"]
-            assert operation["operationId"] == (
-                f"{original['operationId']}Jackett"
-            )
+            assert operation["operationId"] == (f"{original['operationId']}Jackett")
             assert operation["parameters"] == original["parameters"]

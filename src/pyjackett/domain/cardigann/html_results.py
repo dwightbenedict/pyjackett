@@ -36,9 +36,7 @@ def merge_following_rows(rows: list[Element], count: int) -> list[Element]:
     return remaining
 
 
-def select_rows(
-    document, context: ResultContext, variables: Variables
-) -> list[Element]:
+def select_rows(document, context: ResultContext, variables: Variables) -> list[Element]:
     rows_block = context.search.rows
     selector = apply_template(rows_block.selector, variables)
     rows = list(html_dom.query_selector_all(document, selector))
@@ -57,17 +55,13 @@ def _previous_candidate(element: Element) -> Element | None:
     return previous
 
 
-def find_date_header(
-    row: Element, context: ResultContext, variables
-) -> str | None:
+def find_date_header(row: Element, context: ResultContext, variables) -> str | None:
     """Walk backwards from ``row`` to the nearest date heading."""
     block = context.search.rows.dateheaders
     candidate = _previous_candidate(row)
     while candidate is not None:
         try:
-            return handle_selector(
-                block, candidate, variables, context.filter_context
-            )
+            return handle_selector(block, candidate, variables, context.filter_context)
         except Exception:  # not a date heading, keep looking
             candidate = _previous_candidate(candidate)
     return None
@@ -99,9 +93,7 @@ def _parse_row(
     """One release from ``row``; None if a row filter dropped it."""
 
     def extract(spec, required):
-        return handle_selector(
-            spec.block, row, variables, context.filter_context, required
-        )
+        return handle_selector(spec.block, row, variables, context.filter_context, required)
 
     release = context.row_parser.parse_row(extract, variables, search_url)
     skip = should_skip_row(

@@ -47,9 +47,7 @@ class DefinitionSyncTask:
     def attach(self) -> None:
         """Start looping on the running event loop (once)."""
         if self._task is None:
-            self._task = asyncio.get_running_loop().create_task(
-                self._run(), name="definition-sync"
-            )
+            self._task = asyncio.get_running_loop().create_task(self._run(), name="definition-sync")
 
     async def detach(self) -> None:
         task, self._task = self._task, None

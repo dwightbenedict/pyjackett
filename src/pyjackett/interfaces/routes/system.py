@@ -37,9 +37,7 @@ async def info():
     )
 
 
-@protected.get(
-    "/updatecheck", response_model=UpdateCheck, summary="Check for updates"
-)
+@protected.get("/updatecheck", response_model=UpdateCheck, summary="Check for updates")
 async def update_check():
     """Updates are delivered through pip, so there is nothing to compare."""
     return UpdateCheck(
@@ -50,14 +48,10 @@ async def update_check():
     )
 
 
-@protected.get(
-    "/stats", response_model=StatsResponse, summary="Per-indexer statistics"
-)
+@protected.get("/stats", response_model=StatsResponse, summary="Per-indexer statistics")
 async def stats(context: Context):
     """Counters since the server started: success, errors, cache hits."""
-    return StatsResponse(
-        totals=context.stats.totals(), indexers=context.stats.snapshot()
-    )
+    return StatsResponse(totals=context.stats.totals(), indexers=context.stats.snapshot())
 
 
 @protected.get("/history", summary="Recent searches, newest first")

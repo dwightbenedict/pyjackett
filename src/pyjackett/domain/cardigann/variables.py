@@ -148,9 +148,7 @@ def add_keyword_variables(
     """``.Query.Keywords`` (raw) and ``.Keywords`` (after the filters)."""
     parts = [variables[f".Query.{key}"] for key in _KEYWORD_PARTS]
     parts.append(variables[".Query.Episode"])
-    variables[".Query.Keywords"] = " ".join(
-        p for p in parts if not is_blank(p)
-    )
+    variables[".Query.Keywords"] = " ".join(p for p in parts if not is_blank(p))
     filter_context.variables = variables
     variables[".Keywords"] = apply_filters(
         variables[".Query.Keywords"], keyword_filters, filter_context

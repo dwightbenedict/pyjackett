@@ -29,9 +29,7 @@ class BaseWebIndexer(BaseIndexer):
     ) -> None:
         super().__init__(dependencies, config_data)
         self.client = dependencies.client_factory()
-        self.requester = WebRequester(
-            self.client, self, self.retry_attempts, self._clock
-        )
+        self.requester = WebRequester(self.client, self, self.retry_attempts, self._clock)
         self._downloader = TorrentDownloader(self.requester)
         self.download_url_base = download_base
 
@@ -66,9 +64,7 @@ class BaseWebIndexer(BaseIndexer):
             return link[len(base) :]
         return link
 
-    def _post_process(
-        self, query: TorznabQuery, releases: list[ReleaseInfo]
-    ) -> list[ReleaseInfo]:
+    def _post_process(self, query: TorznabQuery, releases: list[ReleaseInfo]) -> list[ReleaseInfo]:
         releases = super()._post_process(query, releases)
         for release in releases:
             release.link = self.clean_link(release.link)
@@ -78,9 +74,7 @@ class BaseWebIndexer(BaseIndexer):
         return await self._downloader.download(self.unclean_link(link))
 
     async def download_image(self, link: str) -> WebResult:
-        return await self._downloader.download_image(
-            self.unclean_link(link), self.site_link
-        )
+        return await self._downloader.download_image(self.unclean_link(link), self.site_link)
 
     async def download_with(
         self,

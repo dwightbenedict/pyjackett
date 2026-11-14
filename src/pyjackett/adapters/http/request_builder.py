@@ -28,8 +28,7 @@ def encode_form(pairs: list[tuple[str, str]], encoding: str | None) -> bytes:
     """URL-encode form data with a tracker specific character set."""
     codec = lookup_encoding(encoding) or "utf-8"
     text = "&".join(
-        f"{quote_plus(key, encoding=codec)}="
-        f"{quote_plus(value, encoding=codec)}"
+        f"{quote_plus(key, encoding=codec)}={quote_plus(value, encoding=codec)}"
         for key, value in pairs
     )
     return text.encode("ascii")
@@ -56,9 +55,7 @@ def _user_agent(emulate_browser: bool) -> str:
 
 def _body(request: WebRequest, headers: dict[str, str]) -> bytes | None:
     if request.raw_body:
-        return request.raw_body.encode(
-            lookup_encoding(request.encoding) or "utf-8"
-        )
+        return request.raw_body.encode(lookup_encoding(request.encoding) or "utf-8")
     if request.type is RequestType.POST:
         headers.setdefault("Content-Type", FORM_CONTENT_TYPE)
         return encode_form(request.post_data or [], request.encoding)
@@ -83,9 +80,7 @@ def build_request_kwargs(
         headers = _default_headers(request)
     lowered = {name.lower() for name in headers}
     if "user-agent" not in lowered and (user_agent or not client_sets_headers):
-        headers["User-Agent"] = user_agent or _user_agent(
-            bool(request.emulate_browser)
-        )
+        headers["User-Agent"] = user_agent or _user_agent(bool(request.emulate_browser))
     if request.cookies and request.cookies.strip():
         headers["Cookie"] = request.cookies
     if request.referer:

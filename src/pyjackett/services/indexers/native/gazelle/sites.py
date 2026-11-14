@@ -39,9 +39,7 @@ def _inactivity(days: int, extra: str = "") -> str:
 class BrokenStones(GazelleTracker):
     id = "brokenstones"
     name = "BrokenStones"
-    description = (
-        "Broken Stones is a Private site for MacOS and iOS APPS / GAMES"
-    )
+    description = "Broken Stones is a Private site for MacOS and iOS APPS / GAMES"
     default_site_link = "https://brokenstones.is/"
     legacy_site_links = (
         "https://brokenstones.club/",
@@ -119,9 +117,7 @@ class Orpheus(GazelleTracker):
 
     def download_url(self, torrent_id: int, can_use_token: bool) -> str:
         token = "&usetoken=1" if self._use_tokens and can_use_token else ""
-        return (
-            f"{self.site_link}ajax.php?action=download{token}&id={torrent_id}"
-        )
+        return f"{self.site_link}ajax.php?action=download{token}&id={torrent_id}"
 
     async def perform_query(self, query: TorznabQuery) -> list[ReleaseInfo]:
         releases = await super().perform_query(query)
@@ -176,9 +172,7 @@ class Redacted(GazelleTracker):
 
     def download_url(self, torrent_id: int, can_use_token: bool) -> str:
         token = "&usetoken=1" if self._use_tokens and can_use_token else ""
-        return (
-            f"{self.site_link}ajax.php?action=download{token}&id={torrent_id}"
-        )
+        return f"{self.site_link}ajax.php?action=download{token}&id={torrent_id}"
 
     def should_skip(self, torrent: dict[str, Any]) -> bool:
         is_freeload = str(torrent.get("isFreeload")).lower() == "true"
@@ -188,9 +182,7 @@ class Redacted(GazelleTracker):
 
     async def perform_query(self, query: TorznabQuery) -> list[ReleaseInfo]:
         releases = await super().perform_query(query)
-        releases = [
-            r for r in releases if query.match_query_string_and(r.title)
-        ]
+        releases = [r for r in releases if query.match_query_string_and(r.title)]
         for release in releases:
             release.minimum_ratio = RATIO_NOTE_MINIMUM
         return releases
@@ -199,9 +191,7 @@ class Redacted(GazelleTracker):
 class AlphaRatio(GazelleTracker):
     id = "alpharatio"
     name = "AlphaRatio"
-    description = (
-        "AlphaRatio (AR) is a Private Torrent Tracker for 0DAY / GENERAL"
-    )
+    description = "AlphaRatio (AR) is a Private Torrent Tracker for 0DAY / GENERAL"
     default_site_link = "https://alpharatio.cc/"
     supports_freeleech_tokens = True
     supports_freeleech_only = True
@@ -301,14 +291,10 @@ class GreatPosterWall(GazelleTracker):
             release.description = sub_name
         when = torrent.get("time")
         if when:  # Chinese time, 8 hours ahead of UTC
-            release.publish_date = datetime.strptime(
-                f"{when} +0800", "%Y-%m-%d %H:%M:%S %z"
-            )
+            release.publish_date = datetime.strptime(f"{when} +0800", "%Y-%m-%d %H:%M:%S %z")
         return True
 
-    def _apply_free_type(
-        self, release: ReleaseInfo, torrent: dict[str, Any]
-    ) -> None:
+    def _apply_free_type(self, release: ReleaseInfo, torrent: dict[str, Any]) -> None:
         free_type = str(torrent.get("freeType"))
         if free_type in self.free_types:
             release.download_volume_factor = self.free_types[free_type]
@@ -359,9 +345,7 @@ class SecretCinema(GazelleTracker):
             release.title = _movie_title(torrent, result, media)
         when = torrent.get("time")
         if when:
-            release.publish_date = datetime.strptime(
-                f"{when} +0200", "%Y-%m-%d %H:%M:%S %z"
-            )
+            release.publish_date = datetime.strptime(f"{when} +0200", "%Y-%m-%d %H:%M:%S %z")
         return True
 
     @staticmethod
@@ -377,9 +361,7 @@ class SecretCinema(GazelleTracker):
         }
         target = by_media.get(media or "")
         if target is not None:
-            release.category = [
-                c for c in release.category if c != cat.MOVIES.id
-            ] + [target.id]
+            release.category = [c for c in release.category if c != cat.MOVIES.id] + [target.id]
 
 
 def _is_movie(category: list[int]) -> bool:
@@ -387,9 +369,7 @@ def _is_movie(category: list[int]) -> bool:
     return bool(movies & set(category))
 
 
-def _movie_title(
-    torrent: dict[str, Any], result: dict[str, Any], media: str | None
-) -> str:
+def _movie_title(torrent: dict[str, Any], result: dict[str, Any], media: str | None) -> str:
     name = (torrent.get("releaseName") or "").strip()
     if name and YEAR.search(name):
         return html.unescape(name)
@@ -405,9 +385,7 @@ def _movie_title(
 class Simurg(GazelleTracker):
     id = "simurg"
     name = "Simurg"
-    description = (
-        "Simurg is a Private Torrent Tracker for EBOOKS and AUDIOBOOKS"
-    )
+    description = "Simurg is a Private Torrent Tracker for EBOOKS and AUDIOBOOKS"
     default_site_link = "https://simurg.world/"
     supports_freeleech_tokens = True
     use_api_key = True
@@ -442,9 +420,7 @@ class Simurg(GazelleTracker):
 
     def download_url(self, torrent_id: int, can_use_token: bool) -> str:
         token = "&usetoken=1" if self._use_tokens and can_use_token else ""
-        return (
-            f"{self.site_link}ajax.php?action=download{token}&id={torrent_id}"
-        )
+        return f"{self.site_link}ajax.php?action=download{token}&id={torrent_id}"
 
     def post_parse(
         self,
@@ -498,9 +474,7 @@ class DesiGaane(GazelleTracker):
 
     def download_url(self, torrent_id: int, can_use_token: bool) -> str:
         token = "&usetoken=1" if self._use_tokens and can_use_token else ""
-        return (
-            f"{self.site_link}ajax.php?action=download{token}&id={torrent_id}"
-        )
+        return f"{self.site_link}ajax.php?action=download{token}&id={torrent_id}"
 
     async def perform_query(self, query: TorznabQuery) -> list[ReleaseInfo]:
         releases = await super().perform_query(query)

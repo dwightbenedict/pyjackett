@@ -214,13 +214,9 @@ async def test_session_opens_its_connection_with_the_impersonation():
 
     def factory(**options):
         opened.append(options)
-        return fakes.mock_network(lambda request: fakes.Response(200))(
-            **options
-        )
+        return fakes.mock_network(lambda request: fakes.Response(200))(**options)
 
-    session = HttpSession(
-        ServerConfig(), client_factory=factory, impersonate="chrome"
-    )
+    session = HttpSession(ServerConfig(), client_factory=factory, impersonate="chrome")
     await session.send({"method": "GET", "url": "http://tracker.test/"})
     assert opened[0]["impersonate"] == "chrome"
     await session.aclose()

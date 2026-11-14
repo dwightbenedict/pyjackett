@@ -99,8 +99,7 @@ class ServerConfig:
 
     def to_json(self) -> dict[str, Any]:
         return {
-            json_key: _encode(getattr(self, attribute))
-            for attribute, json_key in JSON_KEYS.items()
+            json_key: _encode(getattr(self, attribute)) for attribute, json_key in JSON_KEYS.items()
         }
 
     @classmethod
@@ -122,10 +121,7 @@ class ServerConfig:
 
     @property
     def proxy_is_anonymous(self) -> bool:
-        return (
-            not (self.proxy_username or "").strip()
-            or not (self.proxy_password or "").strip()
-        )
+        return not (self.proxy_username or "").strip() or not (self.proxy_password or "").strip()
 
     def proxy_address(self, with_credentials: bool = True) -> str | None:
         """Full proxy URL (``scheme://user:pass@host:port``) or None."""

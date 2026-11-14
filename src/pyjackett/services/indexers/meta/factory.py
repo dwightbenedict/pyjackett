@@ -56,8 +56,7 @@ class MetaIndexerFactory:
         predefined = [type_filter(t) for t in PREDEFINED_TYPES]
         predefined += [tag_filter(tag) for tag in sorted(tags)]
         self._predefined = {
-            text: self._create_filter(text, predicate, imdb)
-            for text, predicate in predefined
+            text: self._create_filter(text, predicate, imdb) for text, predicate in predefined
         }
         self._expressions.clear()
 
@@ -66,13 +65,9 @@ class MetaIndexerFactory:
         if not key:
             return ImdbSupport(None)
         client = self._deps.client_factory()
-        return ImdbSupport(
-            OmdbResolver(client, key, self._config.omdb_api_url)
-        )
+        return ImdbSupport(OmdbResolver(client, key, self._config.omdb_api_url))
 
-    def _create_filter(
-        self, text: str, predicate: Predicate, imdb: ImdbSupport
-    ) -> FilterIndexer:
+    def _create_filter(self, text: str, predicate: Predicate, imdb: ImdbSupport) -> FilterIndexer:
         logger.info("Adding filter indexer ('%s' indexer) ...", text)
         return FilterIndexer(text, self._deps, imdb, predicate, self._indexers)
 

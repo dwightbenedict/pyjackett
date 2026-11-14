@@ -203,8 +203,7 @@ def _validate_network(payload: ServerConfigPayload) -> None:
 def _validate_test_timeout(payload: ServerConfigPayload) -> None:
     if not MIN_TEST_TIMEOUT <= payload.test_timeout <= MAX_TEST_TIMEOUT:
         raise ValueError(
-            f"The test timeout must be between {MIN_TEST_TIMEOUT} and "
-            f"{MAX_TEST_TIMEOUT} seconds."
+            f"The test timeout must be between {MIN_TEST_TIMEOUT} and {MAX_TEST_TIMEOUT} seconds."
         )
 
 
@@ -225,9 +224,7 @@ def _validated_flaresolverr(payload: ServerConfigPayload) -> str:
         "http://127.0.0.1:8191",
     )
     if url and payload.flaresolverr_maxtimeout < MIN_FLARESOLVERR_TIMEOUT:
-        raise ValueError(
-            "FlareSolverr Max Timeout must be greater than 5000 ms."
-        )
+        raise ValueError("FlareSolverr Max Timeout must be greater than 5000 ms.")
     return url
 
 
@@ -247,9 +244,7 @@ def _copy_network(config, payload: ServerConfigPayload) -> None:
 def _copy_cache(config, payload: ServerConfigPayload) -> None:
     config.cache_enabled = payload.cache_enabled
     config.cache_ttl = payload.cache_ttl
-    config.cache_max_results_per_indexer = (
-        payload.cache_max_results_per_indexer
-    )
+    config.cache_max_results_per_indexer = payload.cache_max_results_per_indexer
 
 
 def _copy_integrations(config, payload: ServerConfigPayload) -> None:
@@ -261,9 +256,7 @@ def _copy_integrations(config, payload: ServerConfigPayload) -> None:
     config.tracing_enabled = payload.logging
 
 
-def apply_server_config(
-    context: AppContext, payload: ServerConfigPayload
-) -> bool:
+def apply_server_config(context: AppContext, payload: ServerConfigPayload) -> bool:
     """Validate and copy the payload; True if a restart is needed."""
     config = context.config
     _validate_network(payload)
@@ -271,9 +264,7 @@ def apply_server_config(
     flare_url = _validated_flaresolverr(payload)
     blackhole = _validated_blackhole(payload)
     base_path = _clean_base_path(payload.basepathoverride)
-    base_url = _clean_url(
-        payload.baseurloverride, "Base URL Override", "http://pyjackett:9117"
-    )
+    base_url = _clean_url(payload.baseurloverride, "Base URL Override", "http://pyjackett:9117")
     restart = _restart_needed(config, payload, base_path)
     if _apply_proxy(config, payload):
         context.cache.clean_cache()  # let the user test the new proxy
@@ -292,9 +283,7 @@ def _apply_proxy(config, payload: ServerConfigPayload) -> bool:
     if payload.proxy_port is not None and not 1 <= payload.proxy_port <= 65535:
         raise ValueError(INVALID_PORT_MESSAGE)
     new = (
-        ProxyType(payload.proxy_type)
-        if (payload.proxy_url or "").strip()
-        else ProxyType.DISABLED,
+        ProxyType(payload.proxy_type) if (payload.proxy_url or "").strip() else ProxyType.DISABLED,
         payload.proxy_url,
         payload.proxy_port,
         payload.proxy_username,

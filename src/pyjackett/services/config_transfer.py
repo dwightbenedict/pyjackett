@@ -20,9 +20,7 @@ logger = logging.getLogger(__name__)
 BUNDLE_FORMAT = "pyjackett-config"
 BUNDLE_VERSION = 1
 # identity and credentials of this installation never travel in a bundle
-EXCLUDED_ATTRIBUTES = frozenset(
-    {"api_key", "admin_password", "admin_username", "instance_id"}
-)
+EXCLUDED_ATTRIBUTES = frozenset({"api_key", "admin_password", "admin_username", "instance_id"})
 NETWORK_ATTRIBUTES = (
     "port",
     "allow_external",
@@ -97,9 +95,7 @@ class ConfigTransfer:
         if bundle.get("format") != BUNDLE_FORMAT:
             raise ConfigBundleError("Not a PyJackett configuration bundle")
         if bundle.get("version") != BUNDLE_VERSION:
-            raise ConfigBundleError(
-                f"Unsupported bundle version: {bundle.get('version')}"
-            )
+            raise ConfigBundleError(f"Unsupported bundle version: {bundle.get('version')}")
 
     def _import_server(self, section: dict[str, Any]) -> bool:
         """Copy the settings of ``section``; True if a restart is needed."""

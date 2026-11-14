@@ -54,9 +54,7 @@ class SingleFlight:
     def _start(self, key: str, work: Callable[[], Awaitable[T]]) -> _Flight:
         flight = _Flight(asyncio.ensure_future(work()))
         self._flights[key] = flight
-        flight.task.add_done_callback(
-            lambda task: self._finish(key, flight, task)
-        )
+        flight.task.add_done_callback(lambda task: self._finish(key, flight, task))
         return flight
 
     def _finish(self, key: str, flight: _Flight, task: asyncio.Future) -> None:

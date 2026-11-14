@@ -49,7 +49,7 @@ def _passes_filter(parsed: Any, name: str, key: str) -> bool:
 
 def parse_field_selector(parsed: Any, row_selector: str) -> str | None:
     """Path part of ``row_selector``; None if a filter rejects ``parsed``."""
-    path = row_selector.split(":")[0]
+    path = row_selector.split(":", maxsplit=1)[0]
     if path.strip():
         target = select_token(parsed, path)
         if target is MISSING:
@@ -57,16 +57,12 @@ def parse_field_selector(parsed: Any, row_selector: str) -> str | None:
     else:
         target = parsed
     for match in _FILTER.finditer(row_selector):
-        if not _passes_filter(
-            target, match.group("filter"), match.group("key")
-        ):
+        if not _passes_filter(target, match.group("filter"), match.group("key")):
             return None
     return path
 
 
-def select_rows(
-    parsed_json: Any, row_selector: str, variables: Variables
-) -> list[Any] | None:
+def select_rows(parsed_json: Any, row_selector: str, variables: Variables) -> list[Any] | None:
     """Rows of a JSON document, or None when the selector is invalid."""
     row_selector = apply_template(row_selector, variables)
     path = row_selector.split(":")[0]
@@ -75,15 +71,9 @@ def select_rows(
         rows = select_token(parsed_json, path)
         if rows is MISSING or not isinstance(rows, list):
             return None
-        return [
-            row
-            for row in rows
-            if parse_field_selector(row, filters) is not None
-        ]
+        return [row for row in rows if parse_field_selector(row, filters) is not None]
     except (ValueError, TypeError) as error:
-        logger.debug(
-            'Failed to parse JSON rows for "%s": %s', row_selector, error
-        )
+        logger.debug('Failed to parse JSON rows for "%s": %s', row_selector, error)
         return None
 
 
@@ -125,9 +115,7 @@ def _case_value(
         if (value is not None and value == key) or key == "*":
             return apply_template(template, variables)
     if required:
-        raise SelectorError(
-            f'None of the case selectors "{",".join(block.case)}" matched'
-        )
+        raise SelectorError(f'None of the case selectors "{",".join(block.case)}" matched')
     return None
 
 

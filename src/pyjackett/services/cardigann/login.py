@@ -75,14 +75,10 @@ class CardigannLogin:
 
     # ---- error detection ----------------------------------------------------
 
-    def check_for_error(
-        self, result: WebResult, errors: list[ErrorBlock] | None
-    ) -> bool:
+    def check_for_error(self, result: WebResult, errors: list[ErrorBlock] | None) -> bool:
         """Raise if the page shows one of the definition's error messages."""
         if result.status == UNAUTHORIZED:  # e.g. YGGtorrent
-            raise self._config_error(
-                "401 Unauthorized, check your credentials"
-            )
+            raise self._config_error("401 Unauthorized, check your credentials")
         if not errors:
             return True
         document = html_dom.parse_html(result.content_string)
@@ -126,9 +122,7 @@ class CardigannLogin:
         try:
             return self._strategies[LoginMethod(method)]
         except ValueError:
-            raise NotImplementedError(
-                f"Login method {method} not implemented"
-            ) from None
+            raise NotImplementedError(f"Login method {method} not implemented") from None
 
     # Every strategy takes (login, variables, headers, cookies) and returns
     # False only when the login could not be completed automatically.
@@ -153,13 +147,10 @@ class CardigannLogin:
         self, login: LoginBlock, variables: Variables, headers: dict[str, str]
     ) -> None:
         pairs = [
-            (key, apply_template(value, variables))
-            for key, value in (login.inputs or {}).items()
+            (key, apply_template(value, variables)) for key, value in (login.inputs or {}).items()
         ]
         url = self._host.resolve_path(apply_template(login.path, variables))
-        self._store_cookies(
-            "; ".join(login.cookies) if login.cookies else None
-        )
+        self._store_cookies("; ".join(login.cookies) if login.cookies else None)
         result = await self._host.requester.login_and_follow_redirect(
             url, pairs, None, True, None, self._host.site_link, True, headers
         )
@@ -174,8 +165,7 @@ class CardigannLogin:
         self, login: LoginBlock, variables: Variables, headers: dict[str, str]
     ) -> None:
         pairs = [
-            (key, apply_template(value, variables))
-            for key, value in (login.inputs or {}).items()
+            (key, apply_template(value, variables)) for key, value in (login.inputs or {}).items()
         ]
         path = apply_template(login.path, variables)
         url = self._host.resolve_path(f"{path}?{build_query_string(pairs)}")
@@ -208,9 +198,7 @@ class CardigannLogin:
         headers: dict[str, str],
         cookies: str | None,
     ) -> bool:
-        login_url = self._host.resolve_path(
-            apply_template(login.path, variables)
-        )
+        login_url = self._host.resolve_path(apply_template(login.path, variables))
         if self._landing_document is None:
             setup = await self.get_configuration_for_setup(True, cookies)
             if setup is None:  # captcha during an automatic login
@@ -222,16 +210,12 @@ class CardigannLogin:
                 f"Login failed: No form found on {login_url} using form "
                 f"selector {login.form or 'form'}"
             )
-        fields = await self._collect_fields(
-            login, form, page, variables, headers, login_url
-        )
+        fields = await self._collect_fields(login, form, page, variables, headers, login_url)
         submit_url = self._submit_url(login, form, page, variables, login_url)
         # forget the landing page: a later re-login needs a fresh one
         self._landing_result = None
         self._landing_document = None
-        result = await self._submit_form(
-            form, fields, submit_url, login_url, headers
-        )
+        result = await self._submit_form(form, fields, submit_url, login_url, headers)
         self._store_cookies(result.cookies)
         self.check_for_error(result, login.error)
         return True
@@ -243,23 +227,11 @@ class CardigannLogin:
         root = html_dom.root_element(page)
         context = host.filter_context(variables)
         fields = form_fields(form)
-        apply_configured_inputs(
-            fields, login, page, variables, host.config_data
-        )
-        fields.update(
-            selector_values(
-                login.selectorinputs, root, variables, context, "input"
-            )
-        )
-        fields.update(
-            await simple_captcha_fields(host, page, login_url, headers)
-        )
+        apply_configured_inputs(fields, login, page, variables, host.config_data)
+        fields.update(selector_values(login.selectorinputs, root, variables, context, "input"))
+        fields.update(await simple_captcha_fields(host, page, login_url, headers))
         if login.captcha is not None:
-            fields.update(
-                captcha_answer_fields(
-                    host, login.captcha, page, login.selectors
-                )
-            )
+            fields.update(captcha_answer_fields(host, login.captcha, page, login.selectors))
         return fields
 
     def _submit_url(self, login, form, page, variables, login_url) -> str:
@@ -271,16 +243,12 @@ class CardigannLogin:
             context,
             "get selector input",
         )
-        action = (
-            login.submitpath or html_dom.attribute_value(form, "action") or ""
-        )
+        action = login.submitpath or html_dom.attribute_value(form, "action") or ""
         if query:
             action += "?" + build_query_string(query.items())
         return self._host.resolve_path(action, login_url)
 
-    async def _submit_form(
-        self, form, fields, submit_url, login_url, headers
-    ) -> WebResult:
+    async def _submit_form(self, form, fields, submit_url, login_url, headers) -> WebResult:
         host = self._host
         if html_dom.attribute_value(form, "enctype") == "multipart/form-data":
             body, content_type = build_multipart(fields)
@@ -313,9 +281,7 @@ class CardigannLogin:
     ) -> WebResult:
         """Fetch the login page and remember its parsed document."""
         host = self._host
-        self._store_cookies(
-            "; ".join(login.cookies) if login.cookies else None
-        )
+        self._store_cookies("; ".join(login.cookies) if login.cookies else None)
         result = await host.requester.request(
             login_url, cookies, referer=host.site_link, headers=headers
         )
@@ -333,8 +299,7 @@ class CardigannLogin:
             "Got captcha during automatic login, please reconfigure manually"
         )
         logger.error(
-            "CardigannIndexer (%s): Found captcha during automatic "
-            "login, aborting",
+            "CardigannIndexer (%s): Found captcha during automatic login, aborting",
             self._host.id,
         )
         self._landing_document = None
@@ -352,9 +317,7 @@ class CardigannLogin:
         variables = host.base_variables()
         headers = self._headers(variables)
         login_url = host.resolve_path(apply_template(login.path, variables))
-        result = await self._load_landing_page(
-            login, login_url, headers, cookies
-        )
+        result = await self._load_landing_page(login, login_url, headers, cookies)
         has_captcha = login.captcha is not None and await add_captcha_items(
             host,
             login.captcha,
@@ -378,10 +341,7 @@ class CardigannLogin:
         url = host.resolve_path(login.test.path)
         headers = self._headers(host.base_variables())
         result = await host.requester.request(url, headers=headers)
-        if (
-            result.is_redirect
-            and result_domain_hint(result, host.site_link) is None
-        ):
+        if result.is_redirect and result_domain_hint(result, host.site_link) is None:
             logger.warning(
                 "Redirected to %s from test login request",
                 result.redirecting_to,
@@ -411,9 +371,7 @@ class CardigannLogin:
             return
         document = html_dom.parse_html(result.content_string)
         if not html_dom.query_selector_all(document, selector):
-            raise self._config_error(
-                f'Login failed: Selector "{selector}" didn\'t match'
-            )
+            raise self._config_error(f'Login failed: Selector "{selector}" didn\'t match')
 
     # ---- re-login -----------------------------------------------------------
 
@@ -433,16 +391,11 @@ class CardigannLogin:
         is_html = content_type is None or "text/html" in content_type
         if login.test.selector is not None and is_html:
             document = html_dom.parse_html(response.content_string)
-            return not html_dom.query_selector_all(
-                document, login.test.selector
-            )
+            return not html_dom.query_selector_all(document, login.test.selector)
         return False
 
     def _domain_change_message(self, hint: str) -> str:
-        message = (
-            f"Got redirected to another domain. Try changing the indexer "
-            f"URL to {hint}."
-        )
+        message = f"Got redirected to another domain. Try changing the indexer URL to {hint}."
         if self._host.definition.followredirect:
             self._host.set_site_link(hint)
             message += " Updated site link, please try again."

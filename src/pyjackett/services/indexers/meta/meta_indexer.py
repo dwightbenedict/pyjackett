@@ -91,15 +91,11 @@ class BaseMetaIndexer(BaseIndexer):
 
     # ---- searching ----------------------------------------------------------
 
-    def _post_process(
-        self, query: TorznabQuery, releases: list[ReleaseInfo]
-    ) -> list[ReleaseInfo]:
+    def _post_process(self, query: TorznabQuery, releases: list[ReleaseInfo]) -> list[ReleaseInfo]:
         """Members already cleaned their own results."""
         return releases
 
-    def _record_outcome(
-        self, query: TorznabQuery, releases: list[ReleaseInfo]
-    ) -> None:
+    def _record_outcome(self, query: TorznabQuery, releases: list[ReleaseInfo]) -> None:
         """Members cache their results and track their own health."""
 
     async def perform_query(self, query: TorznabQuery) -> list[ReleaseInfo]:
@@ -116,24 +112,17 @@ class BaseMetaIndexer(BaseIndexer):
             return members
         working = [m for m in members if not m.is_failing]
         if len(working) < len(members):
-            logger.info(
-                "Skipping %d failing indexers", len(members) - len(working)
-            )
+            logger.info("Skipping %d failing indexers", len(members) - len(working))
         return working
 
     async def _query_members(self, query: TorznabQuery):
         members = self._searchable_members()
-        searches = [
-            m.results_for_query(query, True)
-            for m in members
-            if m.can_handle_query(query)
-        ]
+        searches = [m.results_for_query(query, True) for m in members if m.can_handle_query(query)]
         for fallback in await self._imdb.fallback_queries(query):
             searches += [
                 m.results_for_query(fallback, True)
                 for m in members
-                if not m.can_handle_query(query)
-                and m.can_handle_query(fallback)
+                if not m.can_handle_query(query) and m.can_handle_query(fallback)
             ]
         return await self._gather_within_timeout(searches)
 
@@ -146,9 +135,7 @@ class BaseMetaIndexer(BaseIndexer):
         tasks = [asyncio.ensure_future(search) for search in searches]
         if not tasks:
             return []
-        done, pending = await asyncio.wait(
-            tasks, timeout=MEMBER_TIMEOUT_SECONDS
-        )
+        done, pending = await asyncio.wait(tasks, timeout=MEMBER_TIMEOUT_SECONDS)
         for task in pending:
             task.cancel()
         results = []
@@ -194,10 +181,7 @@ class FilterIndexer(BaseMetaIndexer):
         super().__init__(dependencies, imdb, member_filter, indexers)
         self.id = filter_text
         self.name = filter_text
-        self.description = (
-            f"This feed includes all configured trackers filter by "
-            f"{filter_text}"
-        )
+        self.description = f"This feed includes all configured trackers filter by {filter_text}"
 
     @property
     def is_configured(self) -> bool:

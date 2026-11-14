@@ -16,8 +16,7 @@ from pyjackett.domain.category_mappings import (
 
 def tree_of(mappings: CategoryMappings) -> list[tuple[int, list[int]]]:
     return [
-        (node.id, [child.id for child in node.subcategories])
-        for node in mappings.category_tree()
+        (node.id, [child.id for child in node.subcategories]) for node in mappings.category_tree()
     ]
 
 
@@ -47,11 +46,7 @@ def test_parents_keep_the_order_they_were_first_seen_in():
 def test_a_described_mapping_adds_a_custom_category():
     mappings = CategoryMappings()
     mappings.add("7", MOVIES_HD, "Films 1080p")
-    custom = [
-        node
-        for node in mappings.category_tree()
-        if node.id >= CUSTOM_CATEGORY_OFFSET
-    ]
+    custom = [node for node in mappings.category_tree() if node.id >= CUSTOM_CATEGORY_OFFSET]
     assert [(c.id, c.name) for c in custom] == [(100007, "Films 1080p")]
     assert mappings.to_torznab("7") == [MOVIES_HD.id, 100007]
 

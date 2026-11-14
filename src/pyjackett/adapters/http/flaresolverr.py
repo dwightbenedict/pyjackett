@@ -54,15 +54,11 @@ def _cookie_list(header: str | None) -> list[dict[str, str]]:
         jar.load(header or "")
     except Exception:  # malformed cookie headers are simply ignored
         return []
-    return [
-        {"name": name, "value": morsel.value} for name, morsel in jar.items()
-    ]
+    return [{"name": name, "value": morsel.value} for name, morsel in jar.items()]
 
 
 def _payload(request: WebRequest, max_timeout: int, proxy: dict | None):
-    command = (
-        "request.post" if request.type is RequestType.POST else ("request.get")
-    )
+    command = "request.post" if request.type is RequestType.POST else ("request.get")
     payload: dict = {
         "cmd": command,
         "url": request.url,
@@ -80,9 +76,7 @@ def _payload(request: WebRequest, max_timeout: int, proxy: dict | None):
 
 
 def _solution_cookies(solution: dict) -> str:
-    return "; ".join(
-        f"{c['name']}={c['value']}" for c in solution.get("cookies", [])
-    )
+    return "; ".join(f"{c['name']}={c['value']}" for c in solution.get("cookies", []))
 
 
 class ChallengeSolver(Protocol):
@@ -119,9 +113,7 @@ class FlareSolverrClient:
         response = await self._http.post(self._endpoint, json=payload)
         body = response.json()
         if body.get("status") != "ok":
-            raise RuntimeError(
-                f"FlareSolverr failed: {body.get('message', 'unknown error')}"
-            )
+            raise RuntimeError(f"FlareSolverr failed: {body.get('message', 'unknown error')}")
         return self._to_solution(body["solution"], request)
 
     @staticmethod
@@ -131,9 +123,7 @@ class FlareSolverrClient:
         result = WebResult(
             status=int(solution.get("status", 200)),
             content_bytes=text.encode("utf-8"),
-            headers={
-                k.lower(): [v] for k, v in solution.get("headers", {}).items()
-            },
+            headers={k.lower(): [v] for k, v in solution.get("headers", {}).items()},
             cookies=cookies or None,
             request=request,
         )

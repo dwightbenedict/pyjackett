@@ -70,8 +70,6 @@ def bytes_from_unit(unit: str, value: float) -> int:
 
 def parse_size(value: str) -> int:
     """Parse "1.018,29 MB" style sizes into bytes."""
-    number = _collapse_thousand_dots(
-        (_keep_number_chars(value) or "0").replace(",", ".")
-    )
+    number = _collapse_thousand_dots((_keep_number_chars(value) or "0").replace(",", "."))
     unit = "".join(c for c in value if c.isalpha())
     return bytes_from_unit(unit, float(number))

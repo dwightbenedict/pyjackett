@@ -51,9 +51,7 @@ USER_AGENT_HELP = (
 
 def _require_options(setting: SettingsField) -> dict[str, str]:
     if setting.options is None:
-        raise ValueError(
-            f"Options must be given for the '{setting.type}' type."
-        )
+        raise ValueError(f"Options must be given for the '{setting.type}' type.")
     return setting.options
 
 
@@ -83,13 +81,9 @@ def _input_item(setting: SettingsField, title: str) -> ConfigItem:
     if kind == "checkbox":
         return BoolItem(title, setting.default == "true")
     if kind == "multi-select":
-        return MultiSelectItem(
-            title, _require_options(setting), setting.defaults
-        )
+        return MultiSelectItem(title, _require_options(setting), setting.defaults)
     if kind == "select":
-        return SingleSelectItem(
-            title, _require_options(setting), setting.default
-        )
+        return SingleSelectItem(title, _require_options(setting), setting.default)
     if kind in (None, "text", "password"):
         return StringItem(title, setting.default)
     raise ValueError(f"Invalid setting type '{kind}' specified.")
@@ -104,11 +98,7 @@ def create_item(setting: SettingsField, definition_name: str) -> ConfigItem:
 def build_configuration(definition: IndexerDefinition) -> ConfigurationData:
     """One form item per setting (username/password if none declared)."""
     config = ConfigurationData()
-    settings = (
-        DEFAULT_SETTINGS
-        if definition.settings is None
-        else (definition.settings)
-    )
+    settings = DEFAULT_SETTINGS if definition.settings is None else (definition.settings)
     for setting in settings:
         config.add_dynamic(setting.name, create_item(setting, definition.name))
     return config

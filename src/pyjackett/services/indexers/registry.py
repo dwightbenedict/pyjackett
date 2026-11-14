@@ -22,9 +22,7 @@ class IndexerRegistry:
     def register(self, indexer: BaseIndexer) -> bool:
         """Add ``indexer``; False when its id is already taken."""
         if indexer.id in self._indexers:
-            logger.warning(
-                "Ignoring indexer ID %s: it already exists", indexer.id
-            )
+            logger.warning("Ignoring indexer ID %s: it already exists", indexer.id)
             return False
         self._indexers[indexer.id] = indexer
         return True

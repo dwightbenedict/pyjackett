@@ -66,9 +66,7 @@ def test_search_returns_both_releases(configured, api_key):
 def test_search_item_details(configured, api_key):
     root = ET.fromstring(torznab(configured, api_key, q="").text)
     item = next(root.iter("item"))
-    attrs = {
-        a.get("name"): a.get("value") for a in item.iter(TORZNAB + "attr")
-    }
+    attrs = {a.get("name"): a.get("value") for a in item.iter(TORZNAB + "attr")}
     assert attrs["seeders"] == "42"
     assert attrs["peers"] == "49"  # seeders + leechers
     assert item.findtext("size") == str(int(1.5 * 1024**3))
@@ -78,16 +76,12 @@ def test_search_item_details(configured, api_key):
 
 def test_andmatch_filters_unrelated_titles(configured, api_key):
     root = ET.fromstring(torznab(configured, api_key, q="movie").text)
-    assert [i.findtext("title") for i in root.iter("item")] == [
-        "Big Movie 2020 1080p"
-    ]
+    assert [i.findtext("title") for i in root.iter("item")] == ["Big Movie 2020 1080p"]
 
 
 def test_category_filter(configured, api_key):
     root = ET.fromstring(torznab(configured, api_key, q="", cat="5000").text)
-    assert [i.findtext("title") for i in root.iter("item")] == [
-        "Other Show S01E01"
-    ]
+    assert [i.findtext("title") for i in root.iter("item")] == ["Other Show S01E01"]
 
 
 def test_unsupported_query_is_an_error(configured, api_key):
@@ -108,10 +102,7 @@ def test_download_goes_through_proxy_and_sorts_torrent(configured, api_key):
 
 
 def test_download_requires_api_key(configured):
-    assert (
-        configured.get("/dl/faketracker/?path=x&jackett_apikey=no").status_code
-        == 401
-    )
+    assert configured.get("/dl/faketracker/?path=x&jackett_apikey=no").status_code == 401
 
 
 def test_manual_search_lists_results_and_status(configured, api_key):

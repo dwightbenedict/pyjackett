@@ -124,9 +124,7 @@ def test_cache_without_a_total_cap_keeps_everything():
     cache = ResultsCache(ServerConfig())
     for name in "abc":
         cache.cache_results(Indexer(name), query("q"), releases(50))
-    assert all(
-        len(cache.search(Indexer(name), query("q"))) == 50 for name in "abc"
-    )
+    assert all(len(cache.search(Indexer(name), query("q"))) == 50 for name in "abc")
 
 
 # ---- environment ------------------------------------------------------------
@@ -137,9 +135,7 @@ def test_cache_without_a_total_cap_keeps_everything():
     [("8", 8), (" 3 ", 3), ("0", None), ("-2", None), ("x", None), ("", None)],
 )
 def test_positive_int_ignores_unusable_values(value, expected):
-    assert positive_int({MAX_CONCURRENCY_ENV: value}, MAX_CONCURRENCY_ENV) == (
-        expected
-    )
+    assert positive_int({MAX_CONCURRENCY_ENV: value}, MAX_CONCURRENCY_ENV) == (expected)
 
 
 def test_positive_int_of_an_unset_variable_is_none():
@@ -149,9 +145,7 @@ def test_positive_int_of_an_unset_variable_is_none():
 def test_cache_limit_defaults_and_overrides():
     assert cache_limit_from({}) == DEFAULT_CACHE_MAX_RELEASES
     assert cache_limit_from({CACHE_MAX_RELEASES_ENV: "500"}) == 500
-    assert cache_limit_from({CACHE_MAX_RELEASES_ENV: "nope"}) == (
-        DEFAULT_CACHE_MAX_RELEASES
-    )
+    assert cache_limit_from({CACHE_MAX_RELEASES_ENV: "nope"}) == (DEFAULT_CACHE_MAX_RELEASES)
 
 
 def test_environment_fixes_the_api_key_and_password_across_restarts(tmp_path):
@@ -160,9 +154,7 @@ def test_environment_fixes_the_api_key_and_password_across_restarts(tmp_path):
         data_dir = tmp_path / "fresh"
         for leftover in data_dir.glob("*.json"):
             leftover.unlink()
-        context = build_context(
-            data_dir, include_bundled=False, environ=environ
-        )
+        context = build_context(data_dir, include_bundled=False, environ=environ)
         assert context.config.api_key == "fixed-key"
         assert context.security.is_valid_api_key("fixed-key")
         assert context.security.check_authorised("s3cret")
@@ -257,9 +249,7 @@ def test_definition_cache_drops_definitions_that_were_not_used(tmp_path):
     second.parse(DEFINITION)  # the other one is gone after this save
     second.save()
     parser = CountingParser()
-    DefinitionCache(path, parser).parse(
-        DEFINITION.replace("id: cached", "id: other")
-    )
+    DefinitionCache(path, parser).parse(DEFINITION.replace("id: cached", "id: other"))
     assert len(parser.texts) == 1
 
 

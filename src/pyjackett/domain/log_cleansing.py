@@ -95,9 +95,7 @@ _RULES = tuple(
 def _mask_secrets(match: regex.Match) -> str:
     """The matched text with every ``secret`` capture replaced."""
     text, offset = match.group(0), match.start()
-    spans = list(
-        zip(match.starts("secret"), match.ends("secret"), strict=True)
-    )
+    spans = list(zip(match.starts("secret"), match.ends("secret"), strict=True))
     for start, end in reversed(spans):
         text = text[: start - offset] + REMOVED + text[end - offset :]
     return text

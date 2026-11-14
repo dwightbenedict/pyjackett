@@ -29,9 +29,7 @@ def _page(name: str, base_path: str) -> HTMLResponse:
 
 
 def _redirect(context: AppContext, path: str) -> RedirectResponse:
-    return RedirectResponse(
-        f"{context.server_service.base_path()}{path}", status_code=303
-    )
+    return RedirectResponse(f"{context.server_service.base_path()}{path}", status_code=303)
 
 
 def _with_session(context: AppContext, response: RedirectResponse):

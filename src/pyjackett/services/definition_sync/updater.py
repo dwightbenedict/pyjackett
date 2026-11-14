@@ -53,16 +53,10 @@ class DefinitionUpdater:
         if not remote:
             raise DefinitionFeedError("The definition listing is empty")
         known = self._store.revisions()
-        wanted = [
-            name
-            for name, revision in sorted(remote.items())
-            if known.get(name) != revision
-        ]
+        wanted = [name for name, revision in sorted(remote.items()) if known.get(name) != revision]
         removed = sorted(set(known) - set(remote))
         texts = await self._fetch_all(wanted)
-        changes = await asyncio.to_thread(
-            self._apply, remote, known, texts, removed
-        )
+        changes = await asyncio.to_thread(self._apply, remote, known, texts, removed)
         logger.info(
             "Definitions: %d added, %d updated, %d removed, %d rejected",
             len(changes.added),
@@ -99,9 +93,7 @@ class DefinitionUpdater:
             try:
                 parse_definition(text)
             except Exception as error:
-                logger.warning(
-                    "Ignoring updated definition %s: %s", name, error
-                )
+                logger.warning("Ignoring updated definition %s: %s", name, error)
                 rejected.append(name)
             else:
                 accepted[name] = Download(text, remote[name])

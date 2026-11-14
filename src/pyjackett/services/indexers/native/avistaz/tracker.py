@@ -123,9 +123,7 @@ class AvistazTracker(NativeIndexer):
             ) from error
         self._token = reply.get("token")
         if self._token is None:
-            raise RuntimeError(
-                reply.get("message") or "Unauthorized request to indexer"
-            )
+            raise RuntimeError(reply.get("message") or "Unauthorized request to indexer")
 
     def _search_headers(self) -> dict[str, str]:
         return {
@@ -193,11 +191,7 @@ class AvistazTracker(NativeIndexer):
         quality = row.get("video_quality") or ""
         kind = (row.get("type") or "").upper()
         if kind == "MOVIE":
-            return [
-                _video_category(
-                    quality, cat.MOVIES_HD, cat.MOVIES_UHD, cat.MOVIES_SD
-                )
-            ]
+            return [_video_category(quality, cat.MOVIES_HD, cat.MOVIES_UHD, cat.MOVIES_SD)]
         if kind == "TV-SHOW":
             return [_video_category(quality, cat.TVHD, cat.TVUHD, cat.TVSD)]
         if kind == "MUSIC":
@@ -220,9 +214,7 @@ class AvistazTracker(NativeIndexer):
             return []  # a search without results, e.g. CinemaZ: tt0075998
         raise_if_rate_limited(response)
         if response.status != HTTP_OK:
-            raise RuntimeError(
-                f"Invalid status code {response.status} received from indexer"
-            )
+            raise RuntimeError(f"Invalid status code {response.status} received from indexer")
         try:
             rows = json.loads(response.content_string)["data"]
             return [self._to_release(row) for row in rows]
@@ -230,9 +222,7 @@ class AvistazTracker(NativeIndexer):
             raise RuntimeError(f"Parse error: {error}") from error
 
     async def _search(self, url: str):
-        return await self.requester.request_with_retry(
-            url, headers=self._search_headers()
-        )
+        return await self.requester.request_with_retry(url, headers=self._search_headers())
 
     def _to_release(self, row: dict[str, Any]) -> ReleaseInfo:
         audio = [tag["language"] for tag in row.get("audio") or []]

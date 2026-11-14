@@ -78,9 +78,7 @@ def _convert_scalar(hint: Any, value: Any) -> Any:
 def _convert_fields(value: Any) -> OrderedFields:
     if not isinstance(value, dict):
         raise ValueError("fields must be a mapping")
-    return OrderedFields(
-        (name, _build(SelectorBlock, block)) for name, block in value.items()
-    )
+    return OrderedFields((name, _build(SelectorBlock, block)) for name, block in value.items())
 
 
 def _convert_list(item_hint: Any, value: Any) -> list:

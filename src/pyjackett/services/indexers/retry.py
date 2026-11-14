@@ -21,9 +21,7 @@ PERMANENT_ERRORS = (ConfigurationError, TooManyRequestsError)
 
 
 def _should_retry(result: WebResult) -> bool:
-    return result.has_http_server_error or result.status == (
-        REQUEST_TIMEOUT_STATUS
-    )
+    return result.has_http_server_error or result.status == (REQUEST_TIMEOUT_STATUS)
 
 
 def _backoff_seconds(attempt: int, clock: Clock) -> float:

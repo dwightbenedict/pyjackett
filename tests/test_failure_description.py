@@ -28,9 +28,7 @@ def test_http_boilerplate_is_dropped():
         "For more information check: https://developer.mozilla.org"
     )
     error = IndexerError(SimpleNamespace(id="demo"), cause)
-    assert describe_failure(error) == (
-        "Client error '403 Forbidden' for url 'https://x.test'"
-    )
+    assert describe_failure(error) == ("Client error '403 Forbidden' for url 'https://x.test'")
 
 
 def test_empty_message_falls_back_to_the_type_name():

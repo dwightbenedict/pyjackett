@@ -87,9 +87,7 @@ async def get_api_key(context: Context):
     summary="Generate a new API key",
     dependencies=SECRETS,
 )
-async def rotate_api_key(
-    context: Context, response: Response, body: RotateApiKeyRequest
-):
+async def rotate_api_key(context: Context, response: Response, body: RotateApiKeyRequest):
     """Every URL using the old key stops working; sessions are renewed."""
     api_key = context.security.rotate_api_key(body.password)
     context.save_config()
@@ -139,7 +137,5 @@ async def shutdown(request: Request, context: Context):
     if not has_valid_api_key(context.security, request):
         return Response(status_code=401)
     logger.warning("Shutdown requested via API")
-    asyncio.get_running_loop().call_later(
-        0.2, os.kill, os.getpid(), signal.SIGINT
-    )
+    asyncio.get_running_loop().call_later(0.2, os.kill, os.getpid(), signal.SIGINT)
     return {"ShuttingDown": True}

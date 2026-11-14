@@ -50,12 +50,8 @@ def test_filter(value, name, args, expected):
 
 
 def test_dateparse_dotnet_layout():
-    result = run(
-        "2024-03-01 12:00:00 +00:00", "dateparse", "yyyy-MM-dd HH:mm:ss zzz"
-    )
-    assert result.startswith("Fri, 01 Mar 2024") or result.startswith(
-        "Thu, 29 Feb"
-    )
+    result = run("2024-03-01 12:00:00 +00:00", "dateparse", "yyyy-MM-dd HH:mm:ss zzz")
+    assert result.startswith("Fri, 01 Mar 2024") or result.startswith("Thu, 29 Feb")
 
 
 def test_dateparse_failure_keeps_value():

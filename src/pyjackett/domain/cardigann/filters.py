@@ -230,9 +230,7 @@ def _jsonjoinarray(data, args, context):
 @register("hexdump")
 def _hexdump(data, args, context):
     dump = "".join(f"{c}({ord(c):02X})" for c in data)
-    logger.debug(
-        "CardigannIndexer (%s): strdump: %s", context.indexer_id, dump
-    )
+    logger.debug("CardigannIndexer (%s): strdump: %s", context.indexer_id, dump)
     return data
 
 
@@ -240,9 +238,7 @@ def _hexdump(data, args, context):
 def _strdump(data, args, context):
     shown = data.replace("\r", "\\r").replace("\n", "\\n")
     tag = f"({args}):" if args else ":"
-    logger.debug(
-        "CardigannIndexer (%s): strdump%s %s", context.indexer_id, tag, shown
-    )
+    logger.debug("CardigannIndexer (%s): strdump%s %s", context.indexer_id, tag, shown)
     return data
 
 

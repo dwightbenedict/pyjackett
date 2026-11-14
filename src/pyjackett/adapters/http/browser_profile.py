@@ -15,9 +15,7 @@ def _available_profiles() -> list[str]:
     return [profile.value for profile in BrowserType]
 
 
-def impersonation_for(
-    user_agent: str, profiles: Iterable[str] | None = None
-) -> str | None:
+def impersonation_for(user_agent: str, profiles: Iterable[str] | None = None) -> str | None:
     """The newest profile not newer than the browser in ``user_agent``.
 
     Returns None when the User-Agent is not Chrome or Firefox, or when no

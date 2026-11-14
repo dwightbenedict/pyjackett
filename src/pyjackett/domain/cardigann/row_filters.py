@@ -13,19 +13,14 @@ from pyjackett.domain.release import ReleaseInfo
 logger = logging.getLogger(__name__)
 
 
-def _id_search_covers_query(
-    query: TorznabQuery, caps: TorznabCapabilities
-) -> bool:
+def _id_search_covers_query(query: TorznabQuery, caps: TorznabCapabilities) -> bool:
     """True when the tracker searched by id, so titles need no matching."""
     imdb = caps.movie_search_imdb_available or caps.tv_search_imdb_available
     checks = (
         (query.imdb_id is not None and imdb),
         (
             query.tmdb_id is not None
-            and (
-                caps.movie_search_tmdb_available
-                or caps.tv_search_tmdb_available
-            )
+            and (caps.movie_search_tmdb_available or caps.tv_search_tmdb_available)
         ),
         (query.tvdb_id is not None and caps.tv_search_tvdb_available),
         (query.douban_id is not None and imdb),
@@ -72,13 +67,9 @@ def should_skip_row(
     skip = False
     for block in filters or []:
         if block.name == "andmatch":
-            skip |= _and_match(
-                block, release, query, caps, variables, indexer_id
-            )
+            skip |= _and_match(block, release, query, caps, variables, indexer_id)
         elif block.name == "strdump":
-            logger.debug(
-                "CardigannIndexer (%s): row strdump: %s", indexer_id, row_text
-            )
+            logger.debug("CardigannIndexer (%s): row strdump: %s", indexer_id, row_text)
         else:
             logger.error(
                 "CardigannIndexer (%s): Unsupported rows filter: %s",

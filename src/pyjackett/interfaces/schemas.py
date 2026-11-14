@@ -34,9 +34,7 @@ class ApiKeyResponse(BaseModel):
 
 
 class RotateApiKeyRequest(BaseModel):
-    password: str | None = Field(
-        default=None, description="Current admin password, if one is set."
-    )
+    password: str | None = Field(default=None, description="Current admin password, if one is set.")
 
 
 class IndexerIds(BaseModel):
@@ -65,14 +63,10 @@ class Release(BaseModel):
 
     title: str | None = Field(None, examples=["Big Movie 2020 1080p"])
     guid: str | None = Field(None, description="Stable id at the tracker.")
-    link: str | None = Field(
-        None, description="Download URL, proxied through this server."
-    )
+    link: str | None = Field(None, description="Download URL, proxied through this server.")
     magnet_uri: str | None = None
     details: str | None = Field(None, description="Page of the release.")
-    category: list[int] = Field(
-        default_factory=list, description="Torznab category ids."
-    )
+    category: list[int] = Field(default_factory=list, description="Torznab category ids.")
     category_desc: str = Field("", examples=["Movies/HD"])
     size: int | None = Field(None, description="Bytes.")
     files: int | None = None
@@ -90,9 +84,7 @@ class Release(BaseModel):
     year: int | None = None
     minimum_ratio: float | None = None
     minimum_seed_time: int | None = Field(None, description="Seconds.")
-    download_volume_factor: float | None = Field(
-        None, description="0 means freeleech."
-    )
+    download_volume_factor: float | None = Field(None, description="0 means freeleech.")
     upload_volume_factor: float | None = None
     publish_date: str | None = Field(None, description="ISO 8601.")
     first_seen: str | None = Field(None, description="ISO 8601.")
@@ -135,29 +127,21 @@ class IndexerSummary(BaseModel):
     id: str = Field(examples=["torrentscsv"])
     name: str
     description: str
-    type: str | None = Field(
-        None, description="public, semi-public or private."
-    )
+    type: str | None = Field(None, description="public, semi-public or private.")
     configured: bool = Field(description="Only configured ones can search.")
     site_link: str
     alternativesitelinks: list[str]
     language: str = Field(examples=["en-US"])
     tags: list[str]
     last_error: str = Field(description="Empty when the last test passed.")
-    potatoenabled: bool = Field(
-        description="Whether the TorrentPotato endpoint can be used."
-    )
+    potatoenabled: bool = Field(description="Whether the TorrentPotato endpoint can be used.")
     healthy: bool = Field(description="Answered recently without errors.")
-    failing: bool = Field(
-        description="Failed recently; retried with back-off."
-    )
+    failing: bool = Field(description="Failed recently; retried with back-off.")
     latency_ms: int | None = Field(
         None,
         description="Time of the last successful search, if there was one.",
     )
-    testing: bool = Field(
-        False, description="A test of this indexer is running right now."
-    )
+    testing: bool = Field(False, description="A test of this indexer is running right now.")
     caps: list[CategoryRef] = Field(description="Flat list of categories.")
 
 
@@ -183,8 +167,7 @@ class Capabilities(BaseModel):
     limits: Limits
     supports_raw_search: bool
     search_modes: dict[str, SearchModeCapability] = Field(
-        description="Keyed by search, tv-search, movie-search, "
-        "music-search and book-search."
+        description="Keyed by search, tv-search, movie-search, music-search and book-search."
     )
     categories: list[Category]
 

@@ -98,9 +98,7 @@ class GazelleTracker(NativeIndexer):
             data.add_dynamic(USERNAME, StringItem("Username"))
             data.add_dynamic(PASSWORD, PasswordItem("Password"))
         if self.has_two_factor:
-            data.add_dynamic(
-                "cookiehint", DisplayInfoItem("CookieHint", COOKIE_HELP)
-            )
+            data.add_dynamic("cookiehint", DisplayInfoItem("CookieHint", COOKIE_HELP))
             data.add_dynamic(COOKIE, StringItem("Cookie", ""))
         if self.use_passkey:
             data.add_dynamic(PASSKEY, StringItem("Passkey"))
@@ -112,13 +110,9 @@ class GazelleTracker(NativeIndexer):
                 BoolItem("Use Freeleech Tokens when Available", False),
             )
         if self.supports_freeleech_only:
-            data.add_dynamic(
-                FREELEECH_ONLY, BoolItem("Search freeleech only", False)
-            )
+            data.add_dynamic(FREELEECH_ONLY, BoolItem("Search freeleech only", False))
         if self.supports_freeload_only:
-            data.add_dynamic(
-                FREELOAD_ONLY, BoolItem("Search freeload only", False)
-            )
+            data.add_dynamic(FREELOAD_ONLY, BoolItem("Search freeload only", False))
         add_instructions(data, self.instructions)
 
     @property
@@ -155,30 +149,23 @@ class GazelleTracker(NativeIndexer):
     def _check_api_key(self) -> None:
         key = text(self.config_data, API_KEY)
         if not key:
-            raise ConfigurationError(
-                "Invalid API Key configured", self.config_data
-            )
+            raise ConfigurationError("Invalid API Key configured", self.config_data)
         allowed = {self.api_key_length, self.api_key_length_legacy} - {0}
         if len(key) not in allowed:
             expected = " or ".join(str(n) for n in sorted(allowed))
             raise ConfigurationError(
-                "Invalid API Key configured: expected length: "
-                f"{expected}, got {len(key)}",
+                f"Invalid API Key configured: expected length: {expected}, got {len(key)}",
                 self.config_data,
             )
 
     async def _test_search(self, failure: str) -> None:
         try:
-            releases = await self.perform_query(
-                TorznabQuery(query_type="search")
-            )
+            releases = await self.perform_query(TorznabQuery(query_type="search"))
             if not releases:
                 raise RuntimeError("Found 0 results in the tracker")
         except Exception as error:
             self.is_configured = False
-            raise ConfigurationError(
-                f"{failure}: {error}", self.config_data
-            ) from error
+            raise ConfigurationError(f"{failure}: {error}", self.config_data) from error
         self.is_configured = True
         self.config_changed()
 
@@ -196,9 +183,7 @@ class GazelleTracker(NativeIndexer):
             self.site_link,
         )
         if "logout.php" not in (response.content_string or ""):
-            raise ConfigurationError(
-                _login_error(response.content_string), self.config_data
-            )
+            raise ConfigurationError(_login_error(response.content_string), self.config_data)
         self.requester.update_cookie_header(response.cookies)
         self.is_configured = True
         self.config_changed()
@@ -228,19 +213,10 @@ class GazelleTracker(NativeIndexer):
 
     def download_url(self, torrent_id: int, can_use_token: bool) -> str:
         token = TOKEN_ARGUMENT if self._use_tokens and can_use_token else ""
-        passkey = (
-            f"&torrent_pass={text(self.config_data, PASSKEY)}"
-            if self.use_passkey
-            else ""
-        )
-        authkey = (
-            f"&authkey={text(self.config_data, AUTHKEY)}"
-            if self.use_authkey
-            else ""
-        )
+        passkey = f"&torrent_pass={text(self.config_data, PASSKEY)}" if self.use_passkey else ""
+        authkey = f"&authkey={text(self.config_data, AUTHKEY)}" if self.use_authkey else ""
         return (
-            f"{self.site_link}torrents.php?action=download"
-            f"{token}{passkey}{authkey}&id={torrent_id}"
+            f"{self.site_link}torrents.php?action=download{token}{passkey}{authkey}&id={torrent_id}"
         )
 
     def strip_token(self, link: str) -> str:
@@ -298,9 +274,7 @@ class GazelleTracker(NativeIndexer):
             response = await self._browse(url)
         self._raise_api_error(response.content_string)
         if response.status >= HTTP_ERROR:
-            raise RuntimeError(
-                f"Invalid status code {response.status} received from indexer"
-            )
+            raise RuntimeError(f"Invalid status code {response.status} received from indexer")
         try:
             releases = self._parse(json.loads(response.content_string))
         except (ValueError, KeyError, TypeError) as error:
@@ -309,27 +283,21 @@ class GazelleTracker(NativeIndexer):
         return releases[:RSS_LIMIT] if query.is_rss_search else releases
 
     async def _browse(self, url: str):
-        return await self.requester.request_with_retry(
-            url, headers=self._auth_headers()
-        )
+        return await self.requester.request_with_retry(url, headers=self._auth_headers())
 
     def _raise_api_error(self, content: str | None) -> None:
         if not (content and "failure" in content and self.use_api_key):
             return
         reason = json.loads(content).get("error")
         if reason and str(reason).strip():
-            raise RuntimeError(
-                f'Unexpected response from indexer request: "{reason}"'
-            )
+            raise RuntimeError(f'Unexpected response from indexer request: "{reason}"')
 
     def _parse(self, payload: dict[str, Any]) -> list[ReleaseInfo]:
         releases: list[ReleaseInfo] = []
         for result in payload["response"]["results"]:
             base = self._group_release(result)
             torrents = result.get("torrents")
-            for torrent in (
-                torrents if isinstance(torrents, list) else [result]
-            ):
+            for torrent in torrents if isinstance(torrents, list) else [result]:
                 if self.should_skip(torrent):
                     continue
                 release = base.clone()
@@ -358,15 +326,11 @@ class GazelleTracker(NativeIndexer):
             return None
         return cover if cover.startswith("http") else self._poster_url + cover
 
-    def _fill_release(
-        self, release: ReleaseInfo, torrent: dict[str, Any]
-    ) -> None:
+    def _fill_release(self, release: ReleaseInfo, torrent: dict[str, Any]) -> None:
         torrent_id = int(torrent["torrentId"])
         when = torrent.get("time")
         if when:
-            release.publish_date = datetime.strptime(
-                f"{when} +0000", "%Y-%m-%d %H:%M:%S %z"
-            )
+            release.publish_date = datetime.strptime(f"{when} +0000", "%Y-%m-%d %H:%M:%S %z")
         flags = _release_flags(torrent)
         if flags:
             release.title += " " + " / ".join(flags)
@@ -378,9 +342,7 @@ class GazelleTracker(NativeIndexer):
         release.files = int(torrent["fileCount"])
         release.grabs = int(torrent["snatches"])
         self._set_volume_factors(release, torrent)
-        release.link = self.download_url(
-            torrent_id, release.download_volume_factor != 0
-        )
+        release.link = self.download_url(torrent_id, release.download_volume_factor != 0)
         release.category = self._categories(torrent.get("category"))
 
     def _categories(self, description: str | None) -> list[int]:
@@ -390,18 +352,12 @@ class GazelleTracker(NativeIndexer):
         return mappings.to_torznab_by_description(description)
 
     @staticmethod
-    def _set_volume_factors(
-        release: ReleaseInfo, torrent: dict[str, Any]
-    ) -> None:
+    def _set_volume_factors(release: ReleaseInfo, torrent: dict[str, Any]) -> None:
         release.download_volume_factor = 1
         release.upload_volume_factor = 1
-        if _as_bool(torrent.get("isFreeleech")) or _as_bool(
-            torrent.get("isPersonalFreeleech")
-        ):
+        if _as_bool(torrent.get("isFreeleech")) or _as_bool(torrent.get("isPersonalFreeleech")):
             release.download_volume_factor = 0
-        if _as_bool(torrent.get("isNeutralLeech")) or _as_bool(
-            torrent.get("isFreeload")
-        ):
+        if _as_bool(torrent.get("isNeutralLeech")) or _as_bool(torrent.get("isFreeload")):
             release.download_volume_factor = 0
             release.upload_volume_factor = 0
 

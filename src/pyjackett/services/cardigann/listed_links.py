@@ -97,9 +97,7 @@ def listed_links_for(indexer_id: str) -> ListedLinks | None:
 class ListedLinkFollower:
     """Finds a working address once the one in use stops answering."""
 
-    def __init__(
-        self, source: ListedLinks, client: WebClient, clock: Clock
-    ) -> None:
+    def __init__(self, source: ListedLinks, client: WebClient, clock: Clock) -> None:
         self._source = source
         self._client = client
         self._clock = clock
@@ -144,10 +142,6 @@ class ListedLinkFollower:
         try:
             result = await self._client.get_result(WebRequest(url=link))
         except Exception as error:
-            logger.debug(
-                "%s does not answer: %s", urlsplit(link).hostname, error
-            )
+            logger.debug("%s does not answer: %s", urlsplit(link).hostname, error)
             return False
-        return 0 < result.status < _SERVER_ERROR and (
-            result.status not in _NOT_FOUND
-        )
+        return 0 < result.status < _SERVER_ERROR and (result.status not in _NOT_FOUND)

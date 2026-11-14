@@ -54,11 +54,7 @@ class TorznabCapabilities:
         """Parameters in canonical order; ``q`` is always supported."""
         if mode is SearchMode.SEARCH:
             return ["q"]
-        return [
-            name
-            for name in MODE_PARAMETERS[mode]
-            if name == "q" or self.supports(mode, name)
-        ]
+        return [name for name in MODE_PARAMETERS[mode] if name == "q" or self.supports(mode, name)]
 
     # ---- convenience flags used by query routing --------------------------
 
@@ -103,9 +99,7 @@ class TorznabCapabilities:
     def merge(self, other: TorznabCapabilities) -> TorznabCapabilities:
         """Union with another indexer's caps (used by meta indexers)."""
         self.search_available = self.search_available or other.search_available
-        self.supports_raw_search = (
-            self.supports_raw_search or other.supports_raw_search
-        )
+        self.supports_raw_search = self.supports_raw_search or other.supports_raw_search
         for mode, names in other._parameters.items():
             merged = self._parameters[mode] + [
                 name for name in names if name not in self._parameters[mode]

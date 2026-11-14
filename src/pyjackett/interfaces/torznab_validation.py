@@ -21,17 +21,14 @@ class TorznabProblem:
 def _unsupported(kind: str, scope: str) -> TorznabProblem:
     return TorznabProblem(
         FUNCTION_NOT_AVAILABLE,
-        f"Function Not Available: {kind} is not supported for {scope} "
-        "search by this indexer",
+        f"Function Not Available: {kind} is not supported for {scope} search by this indexer",
     )
 
 
 def _check_imdb(query: TorznabQuery, indexer: BaseIndexer):
     query.imdb_id = format_imdb_id(query.imdb_id)
     if query.imdb_id is None:
-        return TorznabProblem(
-            INCORRECT_PARAMETER, "Incorrect parameter: invalid imdbid format"
-        )
+        return TorznabProblem(INCORRECT_PARAMETER, "Incorrect parameter: invalid imdbid format")
     caps = indexer.torznab_caps
     if query.is_movie_search and not caps.movie_search_imdb_available:
         return _unsupported("imdbid", "movie")
@@ -55,9 +52,7 @@ def _check_tvdb(query: TorznabQuery, indexer: BaseIndexer):
     return None
 
 
-def validate_query(
-    query: TorznabQuery, indexer: BaseIndexer
-) -> TorznabProblem | None:
+def validate_query(query: TorznabQuery, indexer: BaseIndexer) -> TorznabProblem | None:
     """First problem found with the id parameters, or None."""
     if query.imdb_id is not None:
         problem = _check_imdb(query, indexer)

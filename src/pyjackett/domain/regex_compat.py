@@ -58,9 +58,7 @@ def expand_replacement(match: regex.Match, replacement: str) -> str:
     """Expand ``$1``, ``${name}``, ``$&`` and ``$$`` in ``replacement``."""
     if "$" not in replacement:
         return replacement
-    return _REPLACEMENT_TOKEN.sub(
-        lambda token: _expand_token(token, match), replacement
-    )
+    return _REPLACEMENT_TOKEN.sub(lambda token: _expand_token(token, match), replacement)
 
 
 def replace_all(pattern: str, replacement: str, text: str) -> str:

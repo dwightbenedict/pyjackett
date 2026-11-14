@@ -66,9 +66,7 @@ class BaseIndexer(ABC):
         config_data: ConfigurationData | None = None,
     ) -> None:
         self._deps = dependencies
-        self._clock: Clock = (
-            dependencies.clock if dependencies is not None else SYSTEM_CLOCK
-        )
+        self._clock: Clock = dependencies.clock if dependencies is not None else SYSTEM_CLOCK
         self.config_data = config_data or ConfigurationData()
         self._torznab_caps = TorznabCapabilities()
         self.health = IndexerHealth(self._clock.monotonic)
@@ -159,9 +157,7 @@ class BaseIndexer(ABC):
                 self.id,
             )
 
-    def subscribe_config_changes(
-        self, listener: Callable[[BaseIndexer], None]
-    ) -> None:
+    def subscribe_config_changes(self, listener: Callable[[BaseIndexer], None]) -> None:
         """Call ``listener(self)`` whenever the configuration changes."""
         self._config_listeners.append(listener)
 
@@ -185,9 +181,7 @@ class BaseIndexer(ABC):
         return True
 
     @abstractmethod
-    async def apply_configuration(
-        self, config: list[dict[str, Any]]
-    ) -> ConfigurationStatus:
+    async def apply_configuration(self, config: list[dict[str, Any]]) -> ConfigurationStatus:
         """Validate posted form values (usually logs in) and save them."""
 
     # ---- health -------------------------------------------------------------
@@ -233,9 +227,7 @@ class BaseIndexer(ABC):
                 len(cached.releases),
                 query.query_string(),
             )
-            self._deps.stats.record_cache_hit(
-                self.id, query.query_string(), len(cached.releases)
-            )
+            self._deps.stats.record_cache_hit(self.id, query.query_string(), len(cached.releases))
             return cached
         return await self._deps.single_flight.run(
             f"{self.id}:{query.cache_key()}",
@@ -326,14 +318,10 @@ class BaseIndexer(ABC):
             elapsed_ms,
         )
         self._record_outcome(query, releases)
-        self._deps.stats.record_success(
-            self.id, query.query_string(), len(releases), elapsed_ms
-        )
+        self._deps.stats.record_success(self.id, query.query_string(), len(releases), elapsed_ms)
         return IndexerResult(self, releases, elapsed_ms, False)
 
-    def _record_failure(
-        self, query: TorznabQuery, error: Exception, rate_limited: bool
-    ) -> None:
+    def _record_failure(self, query: TorznabQuery, error: Exception, rate_limited: bool) -> None:
         if rate_limited:
             logger.warning("%s was rate limited: %s", self.name, error)
         else:
@@ -343,22 +331,14 @@ class BaseIndexer(ABC):
                 query.query_string(),
                 error,
             )
-        self._deps.stats.record_failure(
-            self.id, query.query_string(), str(error), rate_limited
-        )
+        self._deps.stats.record_failure(self.id, query.query_string(), str(error), rate_limited)
 
-    def _record_outcome(
-        self, query: TorznabQuery, releases: list[ReleaseInfo]
-    ) -> None:
+    def _record_outcome(self, query: TorznabQuery, releases: list[ReleaseInfo]) -> None:
         """Remember a successful search: cache it and mark us healthy."""
         self._deps.cache.cache_results(self, query, releases)
         self.health.record_success(self._healthy_validity_seconds())
 
-    def _post_process(
-        self, query: TorznabQuery, releases: list[ReleaseInfo]
-    ) -> list[ReleaseInfo]:
+    def _post_process(self, query: TorznabQuery, releases: list[ReleaseInfo]) -> list[ReleaseInfo]:
         """Validate and normalise what the tracker returned."""
         releases = filter_results(releases, query, self.torznab_caps, self.id)
-        return deduplicate_by_guid(
-            fix_results(releases, self, self._clock.now())
-        )
+        return deduplicate_by_guid(fix_results(releases, self, self._clock.now()))

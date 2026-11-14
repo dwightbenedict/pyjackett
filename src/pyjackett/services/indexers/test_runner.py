@@ -49,9 +49,7 @@ class IndexerTestRunner:
             raise
         indexer.last_error = None
 
-    def _finished(
-        self, indexer: BaseIndexer, task: asyncio.Task[None]
-    ) -> None:
+    def _finished(self, indexer: BaseIndexer, task: asyncio.Task[None]) -> None:
         self._running.pop(indexer.id, None)
         if not task.cancelled():
             task.exception()  # seen here when no caller is left to see it

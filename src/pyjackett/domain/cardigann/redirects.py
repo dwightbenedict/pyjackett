@@ -8,9 +8,7 @@ from pyjackett.domain.http_models import WebResult
 from pyjackett.domain.text import is_blank
 
 
-def redirect_domain_hint(
-    request_url: str, redirect_url: str | None, site_link: str
-) -> str | None:
+def redirect_domain_hint(request_url: str, redirect_url: str | None, site_link: str) -> str | None:
     """New site link if a request to the site was redirected off-domain."""
     if is_blank(redirect_url) or not request_url.startswith(site_link):
         return None
@@ -21,6 +19,4 @@ def redirect_domain_hint(
 
 
 def result_domain_hint(result: WebResult, site_link: str) -> str | None:
-    return redirect_domain_hint(
-        result.request.url, result.redirecting_to, site_link
-    )
+    return redirect_domain_hint(result.request.url, result.redirecting_to, site_link)

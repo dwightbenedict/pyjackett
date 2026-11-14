@@ -28,9 +28,7 @@ logger = logging.getLogger(__name__)
 MAX_REDIRECTS = 5
 TORRENT_FILE_START = 0x64  # "d": a bencoded dictionary
 
-Downloader = Callable[
-    [str, RequestType, str | None, dict[str, str] | None], Awaitable[bytes]
-]
+Downloader = Callable[[str, RequestType, str | None, dict[str, str] | None], Awaitable[bytes]]
 
 
 def uri_variables(url: str, prefix: str) -> Variables:
@@ -43,8 +41,7 @@ def uri_variables(url: str, prefix: str) -> Variables:
         f"{prefix}.Scheme": parts.scheme,
         f"{prefix}.Host": parts.hostname or "",
         f"{prefix}.Port": str(parts.port or default_port),
-        f"{prefix}.PathAndQuery": (parts.path or "/")
-        + (f"?{parts.query}" if parts.query else ""),
+        f"{prefix}.PathAndQuery": (parts.path or "/") + (f"?{parts.query}" if parts.query else ""),
         f"{prefix}.Query": f"?{parts.query}" if parts.query else "",
     }
     for key, value in parse_qsl(parts.query, keep_blank_values=True):
@@ -91,25 +88,19 @@ class CardigannDownload:
         definition = self._host.definition
         block = definition.download
         search = definition.search
-        source = (block.headers if block else None) or (
-            search.headers if search else None
-        )
+        source = (block.headers if block else None) or (search.headers if search else None)
         headers = parse_custom_headers(source, self._host.base_variables())
         return await self._download(link, method, link, headers)
 
     # ---- requests -----------------------------------------------------------
 
-    async def _redirectable_request(
-        self, url: str, headers: dict[str, str]
-    ) -> WebResult:
+    async def _redirectable_request(self, url: str, headers: dict[str, str]) -> WebResult:
         requester = self._host.requester
         response = await requester.request(url, headers=headers)
         for _ in range(MAX_REDIRECTS):
             if not response.is_redirect:
                 break
-            response = await requester.request(
-                response.redirecting_to, headers=headers
-            )
+            response = await requester.request(response.redirecting_to, headers=headers)
         return response
 
     async def _request_block(
@@ -123,18 +114,13 @@ class CardigannDownload:
         url = host.resolve_path(apply_template(block.path, variables))
         method = request_type(block.method)
         pairs = [
-            (key, apply_template(value, variables))
-            for key, value in (block.inputs or {}).items()
+            (key, apply_template(value, variables)) for key, value in (block.inputs or {}).items()
         ]
         if pairs and method is RequestType.GET:
             url += "?" if "?" not in url else ""
-            url += build_query_string(
-                pairs, host.encoding, block.queryseparator
-            )
+            url += build_query_string(pairs, host.encoding, block.queryseparator)
             pairs = []
-        return await host.requester.request_with_retry(
-            url, None, method, referer, pairs, headers
-        )
+        return await host.requester.request_with_retry(url, None, method, referer, pairs, headers)
 
     async def _run_before(
         self,
@@ -165,8 +151,7 @@ class CardigannDownload:
         element = html_dom.query_selector(document, text)
         if element is None:
             logger.debug(
-                "CardigannIndexer (%s): Selector %s could not match any "
-                "elements.",
+                "CardigannIndexer (%s): Selector %s could not match any elements.",
                 self._host.id,
                 text,
             )
@@ -180,9 +165,7 @@ class CardigannDownload:
                     f'Attribute "{selector.attribute}" is not set for '
                     f"element {html_dom.to_html(element)}"
                 )
-        return apply_filters(
-            value, selector.filters, self._host.filter_context(variables)
-        )
+        return apply_filters(value, selector.filters, self._host.filter_context(variables))
 
     # ---- strategies ---------------------------------------------------------
 
@@ -220,8 +203,7 @@ class CardigannDownload:
             return await self._download(magnet, method, magnet, None)
         except Exception:
             logger.exception(
-                "CardigannIndexer (%s): An exception occurred while trying "
-                "Infohash block",
+                "CardigannIndexer (%s): An exception occurred while trying Infohash block",
                 self._host.id,
             )
             return None
@@ -238,9 +220,7 @@ class CardigannDownload:
                     link,
                     headers,
                 )
-                result = await self._try_selector(
-                    selector, page, link, variables, headers, method
-                )
+                result = await self._try_selector(selector, page, link, variables, headers, method)
             except Exception:
                 logger.exception(
                     "CardigannIndexer (%s): An exception occurred while "
@@ -258,9 +238,7 @@ class CardigannDownload:
         )
         raise RuntimeError("Download selectors didn't match")
 
-    async def _try_selector(
-        self, selector, page, link, variables, headers, method
-    ) -> bytes | None:
+    async def _try_selector(self, selector, page, link, variables, headers, method) -> bytes | None:
         """Bytes behind the link the selector found, or None to move on."""
         href = self._match_selector(page, selector, variables)
         if href is None:
@@ -278,13 +256,9 @@ class CardigannDownload:
                 selector.selector,
             )
             return None
-        return await self._download(
-            torrent_link, method, torrent_link, headers
-        )
+        return await self._download(torrent_link, method, torrent_link, headers)
 
-    async def _looks_like_torrent(
-        self, url: str, headers: dict[str, str]
-    ) -> bool:
+    async def _looks_like_torrent(self, url: str, headers: dict[str, str]) -> bool:
         response = await self._redirectable_request(url, headers)
         content = response.content_bytes
         return len(content) < 1 or content[0] == TORRENT_FILE_START

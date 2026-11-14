@@ -66,9 +66,7 @@ class IndexerManager:
         self._remove_legacy_configurations()
 
     def _load_source(self, source: IndexerSource) -> None:
-        loaded = sum(
-            self._register(indexer) for indexer in source.load(self._deps)
-        )
+        loaded = sum(self._register(indexer) for indexer in source.load(self._deps))
         logger.info("Loaded %d %s indexers", loaded, source.name)
 
     def _register(self, indexer: BaseIndexer) -> bool:
@@ -155,9 +153,7 @@ class IndexerManager:
         except TimeoutError:
             if not limit.expired():
                 raise
-            raise IndexerTestTimeoutError(
-                f"No answer within {seconds:g} seconds"
-            ) from None
+            raise IndexerTestTimeoutError(f"No answer within {seconds:g} seconds") from None
 
     def add_indexer(self, name: str) -> BaseIndexer:
         """Configure a public indexer with its defaults (idempotent).
@@ -167,9 +163,7 @@ class IndexerManager:
         found = self._registry.find(self._registry.resolve(name))
         if found is None:
             raise UnknownIndexerError(f"Unknown indexer: {name}")
-        if not found.is_configured and not self._provisioner.provision_one(
-            found
-        ):
+        if not found.is_configured and not self._provisioner.provision_one(found):
             raise IndexerConfigurationRequiredError(
                 f"{found.name} needs credentials: configure it with its form"
             )

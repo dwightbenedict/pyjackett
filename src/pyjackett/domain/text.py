@@ -33,10 +33,7 @@ def strip_diacritics(value: str) -> str:
 
 def contains_ignore_case(haystack: str, needle: str) -> bool:
     """Case and diacritic insensitive substring test."""
-    return (
-        strip_diacritics(needle).casefold()
-        in strip_diacritics(haystack).casefold()
-    )
+    return strip_diacritics(needle).casefold() in strip_diacritics(haystack).casefold()
 
 
 def _replace_invalid_char(char: str, replacement: str | None, fancy: bool):
@@ -45,14 +42,10 @@ def _replace_invalid_char(char: str, replacement: str | None, fancy: bool):
     return replacement or ""
 
 
-def make_valid_file_name(
-    text: str, replacement: str | None = "_", fancy: bool = True
-) -> str:
+def make_valid_file_name(text: str, replacement: str | None = "_", fancy: bool = True) -> str:
     """Replace characters that are not allowed in file names."""
     out = [
-        _replace_invalid_char(char, replacement, fancy)
-        if char in _INVALID_FILENAME_CHARS
-        else char
+        _replace_invalid_char(char, replacement, fancy) if char in _INVALID_FILENAME_CHARS else char
         for char in text
     ]
     return "".join(out) or "_"
@@ -61,8 +54,4 @@ def make_valid_file_name(
 def significant_words(text: str) -> list[str]:
     """Split ``text`` into search words, dropping noise words."""
     parts = re.split(r"[^\w]+", text)
-    return [
-        part
-        for part in parts
-        if len(part) > 1 and part.lower() not in _COMMON_WORDS
-    ]
+    return [part for part in parts if len(part) > 1 and part.lower() not in _COMMON_WORDS]

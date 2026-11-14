@@ -27,9 +27,7 @@ SEARCH_PAGE = """
     <td class="date">2024-03-02 08:30:00</td></tr>
 </tbody></table></body></html>
 """
-DETAILS_PAGE = (
-    '<html><body><a class="dl" href="/file/1.torrent">get</a></body></html>'
-)
+DETAILS_PAGE = '<html><body><a class="dl" href="/file/1.torrent">get</a></body></html>'
 # keys deliberately unsorted: the server must normalise them
 UNSORTED_TORRENT = b"d4:name3:foo4:infod6:lengthi3eee"
 

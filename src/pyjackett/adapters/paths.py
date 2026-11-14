@@ -13,9 +13,7 @@ SERVER_CONFIG_FILE = "ServerConfig.json"
 PROTECTION_KEY_FILE = "protection.key"
 DEFINITION_CACHE_FILE = "DefinitionCache.bin"
 INDEXERS_DIR_NAME = "Indexers"
-BUNDLED_DEFINITIONS_DIR = Path(__file__).resolve().parent.parent / (
-    "definitions"
-)
+BUNDLED_DEFINITIONS_DIR = Path(__file__).resolve().parent.parent / ("definitions")
 BUNDLED_WEB_DIR = Path(__file__).resolve().parent.parent / "web"
 
 

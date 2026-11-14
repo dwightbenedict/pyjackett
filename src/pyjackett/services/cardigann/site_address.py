@@ -50,8 +50,7 @@ class SiteAddress:
         listed = listed_links_for(definition.id)
         self._listed = listed and ListedLinkFollower(listed, client, clock)
         self._known = frozenset(
-            _with_slash(link)
-            for link in [*definition.links, *(definition.legacylinks or ())]
+            _with_slash(link) for link in [*definition.links, *(definition.legacylinks or ())]
         )
 
     @property

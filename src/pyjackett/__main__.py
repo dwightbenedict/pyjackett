@@ -37,9 +37,7 @@ def parse_arguments(argv: list[str] | None = None) -> argparse.Namespace:
 
 def configure_logging(debug: bool) -> None:
     logging.basicConfig(format=LOG_FORMAT)
-    logging.getLogger("pyjackett").setLevel(
-        logging.DEBUG if debug else logging.INFO
-    )
+    logging.getLogger("pyjackett").setLevel(logging.DEBUG if debug else logging.INFO)
 
 
 def bind_address(config, override: str | None) -> str:

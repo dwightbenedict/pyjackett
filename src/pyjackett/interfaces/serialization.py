@@ -103,7 +103,5 @@ def capabilities_json(caps: TorznabCapabilities) -> dict[str, Any]:
             }
             for mode in SearchMode
         },
-        "categories": [
-            category_json(c) for c in caps.categories.category_tree(True)
-        ],
+        "categories": [category_json(c) for c in caps.categories.category_tree(True)],
     }

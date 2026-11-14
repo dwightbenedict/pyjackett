@@ -29,10 +29,7 @@ class SpeedAppSite(SpeedAppTracker):
 class SpeedApp(SpeedAppSite):
     id = "speedapp"
     name = "SpeedApp"
-    description = (
-        "SpeedApp is a ROMANIAN Private Torrent Tracker for MOVIES / TV / "
-        "GENERAL"
-    )
+    description = "SpeedApp is a ROMANIAN Private Torrent Tracker for MOVIES / TV / GENERAL"
     default_site_link = "https://speedapp.io/"
     legacy_site_links = (
         "https://www.icetorrent.org/",
@@ -52,10 +49,7 @@ class SpeedApp(SpeedAppSite):
 class RetroFlix(SpeedAppSite):
     id = "retroflix"
     name = "RetroFlix"
-    description = (
-        "RetroFlix is a Private site for Classic Movies / TV / General "
-        "Releases"
-    )
+    description = "RetroFlix is a Private site for Classic Movies / TV / General Releases"
     default_site_link = "https://retroflix.net/"
     alternative_site_links = (
         "https://retroflix.net/",

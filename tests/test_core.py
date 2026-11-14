@@ -34,10 +34,7 @@ def test_category_mapping_and_custom_categories():
     ]
     query = TorznabQuery(categories=[2000])  # parent expands to children
     assert caps.categories.to_tracker_categories(query) == ["12"]
-    tree = {
-        c.id: [s.id for s in c.subcategories]
-        for c in caps.categories.category_tree(True)
-    }
+    tree = {c.id: [s.id for s in c.subcategories] for c in caps.categories.category_tree(True)}
     assert tree == {2000: [2040], 5000: [5040], 100012: []}
 
 
@@ -61,18 +58,10 @@ def test_search_modes_are_validated():
 
 
 def test_episode_strings():
-    assert (
-        TorznabQuery(season=1, episode="2").episode_search_string() == "S01E02"
-    )
+    assert TorznabQuery(season=1, episode="2").episode_search_string() == "S01E02"
     assert TorznabQuery(season=3).episode_search_string() == "S03"
-    assert (
-        TorznabQuery(season=2024, episode="03/15").episode_search_string()
-        == "2024.03.15"
-    )
-    assert (
-        TorznabQuery(season=1, episode="1A").episode_search_string()
-        == "S01E01"
-    )
+    assert TorznabQuery(season=2024, episode="03/15").episode_search_string() == "2024.03.15"
+    assert TorznabQuery(season=1, episode="1A").episode_search_string() == "S01E01"
 
 
 def test_query_classification():

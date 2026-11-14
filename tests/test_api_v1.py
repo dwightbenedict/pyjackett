@@ -134,9 +134,7 @@ def test_bulk_operations_report_each_indexer(client):
     ]
     tested = client.post(f"{V1}/indexers/bulk/test", json={"ids": ids}).json()
     assert [o["status"] for o in tested] == ["ok", "error"]
-    deleted = client.post(
-        f"{V1}/indexers/bulk/delete", json={"ids": ["faketracker"]}
-    ).json()
+    deleted = client.post(f"{V1}/indexers/bulk/delete", json={"ids": ["faketracker"]}).json()
     assert deleted[0]["status"] == "ok"
     listing = client.get(f"{V1}/indexers", params={"configured": True})
     assert listing.json() == []
@@ -157,9 +155,7 @@ def test_cache_can_be_cleared(configured, api_key):
 def test_listing_reports_the_last_search_latency(configured, api_key):
     def latency():
         listed = configured.get(f"{V1}/indexers").json()
-        return next(i for i in listed if i["id"] == "faketracker")[
-            "latency_ms"
-        ]
+        return next(i for i in listed if i["id"] == "faketracker")["latency_ms"]
 
     assert latency() is None
     search(configured, api_key)
@@ -211,9 +207,7 @@ def test_a_test_that_never_answers_times_out(tmp_path):
         web.post(f"{V1}/indexers/faketracker/add")
         context.indexers.get_indexer("faketracker").verify = never_answers
         reply = web.post(f"{V1}/indexers/faketracker/test")
-        outcome = web.post(
-            f"{V1}/indexers/bulk/test", json={"ids": ["faketracker"]}
-        ).json()[0]
+        outcome = web.post(f"{V1}/indexers/bulk/test", json={"ids": ["faketracker"]}).json()[0]
     assert reply.status_code == 500
     assert "No answer within 0.05 seconds" in reply.json()["error"]
     assert outcome["status"] == "error"
@@ -237,9 +231,7 @@ def test_statistics_and_history(configured, api_key):
 def test_api_key_can_be_read_and_rotated(client, context, api_key):
     log_in_as_admin(client)
     assert client.get(f"{V1}/server/apikey").json() == {"api_key": api_key}
-    reply = client.post(
-        f"{V1}/server/apikey/rotate", json={"password": "secret"}
-    )
+    reply = client.post(f"{V1}/server/apikey/rotate", json={"password": "secret"})
     new_key = reply.json()["api_key"]
     assert new_key != api_key
     assert context.config.api_key == new_key
@@ -253,9 +245,7 @@ def test_rotation_keeps_the_admin_password_working(client, context):
     assert context.security.check_authorised("secret")
     wrong = client.post(f"{V1}/server/apikey/rotate", json={"password": "no"})
     assert wrong.status_code == 403
-    right = client.post(
-        f"{V1}/server/apikey/rotate", json={"password": "secret"}
-    )
+    right = client.post(f"{V1}/server/apikey/rotate", json={"password": "secret"})
     assert right.status_code == 200
     assert context.security.check_authorised("secret")
     # the reply renewed the session, so the dashboard stays reachable
@@ -274,9 +264,7 @@ SECRET_ROUTES = (
 def test_secrets_need_a_dashboard_session(client, api_key, method, path):
     client.post(f"{V1}/server/adminpassword", json="secret")
     client.cookies.clear()
-    reply = client.request(
-        method, V1 + path, params={"apikey": api_key}, json={}
-    )
+    reply = client.request(method, V1 + path, params={"apikey": api_key}, json={})
     assert reply.status_code == 401
     assert api_key not in reply.text
 
@@ -333,9 +321,7 @@ def test_spec_covers_search_and_discovery_only(client):
         "/indexers/{indexer_id}/results/stream",
         "/indexers/{indexer_id}/results/torznab",
     ]
-    assert sorted(paths) == sorted(
-        f"{prefix}{s}" for prefix in (V1, "/api/v2.0") for s in suffixes
-    )
+    assert sorted(paths) == sorted(f"{prefix}{s}" for prefix in (V1, "/api/v2.0") for s in suffixes)
     # management stays reachable: the dashboard and scripts call it
     assert client.get(f"{V1}/server/config").status_code == 200
     assert client.get(f"{V1}/server/logs").status_code == 200

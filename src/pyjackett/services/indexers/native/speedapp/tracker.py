@@ -69,9 +69,7 @@ class SpeedAppTracker(NativeIndexer):
         email = text(self.config_data, EMAIL)
         password = text(self.config_data, PASSWORD)
         if not email or not password:
-            raise ConfigurationError(
-                "Please, check the indexer configuration.", self.config_data
-            )
+            raise ConfigurationError("Please, check the indexer configuration.", self.config_data)
         response = await self.requester.request(
             self.site_link + "api/login",
             method=RequestType.POST,
@@ -81,9 +79,7 @@ class SpeedAppTracker(NativeIndexer):
         reply = response.json()
         self._token = reply.get("token")
         if self._token is None:
-            raise ConfigurationError(
-                str(reply.get("message")), self.config_data
-            )
+            raise ConfigurationError(str(reply.get("message")), self.config_data)
 
     def _headers(self) -> dict[str, str]:
         return {"Authorization": f"Bearer {self._token}"}
@@ -111,13 +107,9 @@ class SpeedAppTracker(NativeIndexer):
         if not self._token:  # first time
             await self._renew_token()
         parameters = build_query_string(self.search_parameters(query))
-        response = await self._authorised(
-            f"{self.site_link}api/torrent?{parameters}"
-        )
+        response = await self._authorised(f"{self.site_link}api/torrent?{parameters}")
         if response.status != HTTP_OK:
-            raise RuntimeError(
-                f"Unknown error in search: {response.content_string}"
-            )
+            raise RuntimeError(f"Unknown error in search: {response.content_string}")
         try:
             rows = json.loads(response.content_string)
             releases = [self._to_release(row, query) for row in rows]
@@ -129,14 +121,10 @@ class SpeedAppTracker(NativeIndexer):
         response = await self.requester.request(url, headers=self._headers())
         if response.status == HTTP_UNAUTHORIZED:
             await self._renew_token()
-            response = await self.requester.request(
-                url, headers=self._headers()
-            )
+            response = await self.requester.request(url, headers=self._headers())
         return response
 
-    def _to_release(
-        self, row: dict[str, Any], query: TorznabQuery
-    ) -> ReleaseInfo | None:
+    def _to_release(self, row: dict[str, Any], query: TorznabQuery) -> ReleaseInfo | None:
         download_factor = float(row["download_volume_factor"])
         if flag(self.config_data, FREELEECH) and download_factor != 0:
             return None
@@ -144,9 +132,7 @@ class SpeedAppTracker(NativeIndexer):
         if not query.is_imdb_query and not query.match_query_string_and(title):
             return None
         genres = [
-            genre
-            for genre in GENRE_DELIMITERS.split(row["short_description"] or "")
-            if genre
+            genre for genre in GENRE_DELIMITERS.split(row["short_description"] or "") if genre
         ]
         seeders = int(row["seeders"])
         poster = row.get("poster")
@@ -155,9 +141,7 @@ class SpeedAppTracker(NativeIndexer):
             link=f"{self.site_link}api/torrent/{row['id']}/download",
             details=row["url"],
             guid=row["url"],
-            category=self.torznab_caps.categories.to_torznab(
-                str(row["category"]["id"])
-            ),
+            category=self.torznab_caps.categories.to_torznab(str(row["category"]["id"])),
             publish_date=_parse_date(row["created_at"]),
             description=", ".join(genres),
             genres=genres,

@@ -36,9 +36,7 @@ class SearchCache(Protocol):
     def ttl(self) -> timedelta:
         """Protocol method."""
 
-    def search(
-        self, indexer: BaseIndexer, query: TorznabQuery
-    ) -> list[ReleaseInfo] | None:
+    def search(self, indexer: BaseIndexer, query: TorznabQuery) -> list[ReleaseInfo] | None:
         """Protocol method."""
 
     def cache_results(
@@ -53,19 +51,13 @@ class SearchCache(Protocol):
 class StatsRecorder(Protocol):
     """Where indexers report the searches they run."""
 
-    def record_success(
-        self, indexer_id: str, term: str, results: int, elapsed_ms: int
-    ) -> None:
+    def record_success(self, indexer_id: str, term: str, results: int, elapsed_ms: int) -> None:
         """Protocol method."""
 
-    def record_cache_hit(
-        self, indexer_id: str, term: str, results: int
-    ) -> None:
+    def record_cache_hit(self, indexer_id: str, term: str, results: int) -> None:
         """Protocol method."""
 
-    def record_failure(
-        self, indexer_id: str, term: str, error: str, rate_limited: bool
-    ) -> None:
+    def record_failure(self, indexer_id: str, term: str, error: str, rate_limited: bool) -> None:
         """Protocol method."""
 
 

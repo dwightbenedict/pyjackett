@@ -84,9 +84,7 @@ async def test_a_dead_address_is_replaced_from_the_status_page(tmp_path):
 
 
 async def test_a_cloudflare_403_counts_as_alive(tmp_path):
-    indexer = indexer_for(
-        tmp_path, FakeClock(), "1337x", lambda r: fakes.Response(403)
-    )
+    indexer = indexer_for(tmp_path, FakeClock(), "1337x", lambda r: fakes.Response(403))
     await indexer.follow_site_address()
     assert indexer.site_link == "https://1337x.to/"
 
@@ -110,9 +108,7 @@ async def test_the_check_is_not_repeated_within_the_interval(tmp_path):
 
 
 async def test_an_address_the_user_typed_is_left_alone(tmp_path):
-    indexer = indexer_for(
-        tmp_path, FakeClock(), "world-torrent", lambda r: fakes.Response(410)
-    )
+    indexer = indexer_for(tmp_path, FakeClock(), "world-torrent", lambda r: fakes.Response(410))
     indexer.site_link = "https://my-mirror.example/"
     await indexer.follow_site_address()
     assert indexer.site_link == "https://my-mirror.example/"
@@ -122,9 +118,7 @@ async def test_world_torrent_uses_the_address_pages(tmp_path):
     def handler(request):
         host = request.url.hostname
         if host == "www.torrent-site.my":
-            return fakes.Response(
-                200, text='<a href="https://www.newfox.ws">go</a>'
-            )
+            return fakes.Response(200, text='<a href="https://www.newfox.ws">go</a>')
         return fakes.Response(200 if host == "www.newfox.ws" else 410)
 
     indexer = indexer_for(tmp_path, FakeClock(), "world-torrent", handler)

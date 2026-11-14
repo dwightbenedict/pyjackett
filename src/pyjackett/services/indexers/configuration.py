@@ -17,9 +17,7 @@ logger = logging.getLogger(__name__)
 class IndexerConfigurationService:
     """Bridge between an indexer's form data and its JSON file."""
 
-    def __init__(
-        self, store: IndexerConfigStore, protector: ProtectionService
-    ) -> None:
+    def __init__(self, store: IndexerConfigStore, protector: ProtectionService) -> None:
         self._store = store
         self._protector = protector
 

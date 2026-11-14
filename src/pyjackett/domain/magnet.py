@@ -18,9 +18,7 @@ _PUBLIC_TRACKERS = (
     "udp://tracker.qu.ax:6969/announce",
     "udp://tracker.corpscorp.online:80/announce",
 )
-_TRACKERS_QUERY = "&".join(
-    f"tr={quote(tracker, safe='')}" for tracker in _PUBLIC_TRACKERS
-)
+_TRACKERS_QUERY = "&".join(f"tr={quote(tracker, safe='')}" for tracker in _PUBLIC_TRACKERS)
 
 
 def info_hash_to_public_magnet(info_hash: str, title: str) -> str | None:

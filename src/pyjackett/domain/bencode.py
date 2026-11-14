@@ -77,9 +77,7 @@ def encode(value: Any) -> bytes:
     if isinstance(value, list):
         return b"l" + b"".join(encode(item) for item in value) + b"e"
     if isinstance(value, dict):
-        body = b"".join(
-            encode(key) + encode(value[key]) for key in sorted(value)
-        )
+        body = b"".join(encode(key) + encode(value[key]) for key in sorted(value))
         return b"d" + body + b"e"
     raise BencodeError(f"cannot encode {type(value).__name__}")
 

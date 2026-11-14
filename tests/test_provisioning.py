@@ -102,18 +102,13 @@ def test_disabled_provisioner_does_nothing():
     assert not public.is_configured
 
 
-def test_startup_configures_public_indexers_without_network(
-    tmp_path, definitions
-):
+def test_startup_configures_public_indexers_without_network(tmp_path, definitions):
     with make_client(tmp_path, definitions, True) as client:
         sign_in_as_admin(client)
         configured = client.get("/api/v2.0/indexers?configured=true").json()
         # the native Torrents.csv indexer is public as well
         assert [i["id"] for i in configured] == ["faketracker", "torrentscsv"]
-        everything = {
-            i["id"]: i["configured"]
-            for i in client.get("/api/v2.0/indexers").json()
-        }
+        everything = {i["id"]: i["configured"] for i in client.get("/api/v2.0/indexers").json()}
         assert everything["secretsite"] is False
     saved = tmp_path / "data" / "Indexers" / "faketracker.json"
     assert saved.exists()
@@ -183,9 +178,7 @@ def test_default_indexers_are_all_real_public_indexers():
 
     context = build_context(Path(__import__("tempfile").mkdtemp()), environ={})
     context.indexers.init_indexers()
-    public = {
-        i.id for i in context.indexers.all_indexers() if i.type == "public"
-    }
+    public = {i.id for i in context.indexers.all_indexers() if i.type == "public"}
     assert public >= DEFAULT_PUBLIC_INDEXERS
 
 
@@ -197,9 +190,7 @@ def test_default_indexers_are_all_real_public_indexers():
         ({"PYJACKETT_INDEXERS": "faketracker"}, True),
     ],
 )
-def test_startup_configures_the_default_list_unless_told_otherwise(
-    tmp_path, environ, configured
-):
+def test_startup_configures_the_default_list_unless_told_otherwise(tmp_path, environ, configured):
     from tests.conftest import FIXTURES
 
     context = build_context(
@@ -212,6 +203,4 @@ def test_startup_configures_the_default_list_unless_told_otherwise(
         environ=environ,
     )
     context.indexers.init_indexers()
-    assert context.indexers.get_indexer("faketracker").is_configured is (
-        configured
-    )
+    assert context.indexers.get_indexer("faketracker").is_configured is (configured)

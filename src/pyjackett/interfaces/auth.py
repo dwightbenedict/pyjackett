@@ -56,9 +56,7 @@ def has_valid_api_key(security: SecurityService, request: Request) -> bool:
 
 def require_api_access(security: Security, request: Request) -> None:
     """FastAPI dependency: a valid API key or a dashboard session."""
-    if has_valid_api_key(security, request) or is_authenticated(
-        security, request
-    ):
+    if has_valid_api_key(security, request) or is_authenticated(security, request):
         return
     raise HTTPException(status_code=401, detail="Unauthorized")
 

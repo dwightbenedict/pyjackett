@@ -39,9 +39,7 @@ class DefinitionStore:
     def has_file(self, name: str) -> bool:
         return (self._directory / name).is_file()
 
-    def save(
-        self, downloads: Mapping[str, Download], removed: Iterable[str]
-    ) -> None:
+    def save(self, downloads: Mapping[str, Download], removed: Iterable[str]) -> None:
         """Write the downloads, delete the removed, update the manifest."""
         self._directory.mkdir(parents=True, exist_ok=True)
         manifest = self._read_manifest()

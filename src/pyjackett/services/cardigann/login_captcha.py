@@ -29,9 +29,7 @@ async def add_captcha_items(
 ) -> bool:
     """Show the captcha in the setup form; True if the page contained one."""
     if captcha.type not in SUPPORTED_TYPES:
-        raise NotImplementedError(
-            f'Captcha type "{captcha.type}" is not implemented'
-        )
+        raise NotImplementedError(f'Captcha type "{captcha.type}" is not implemented')
     element = html_dom.query_selector(page, captcha.selector)
     if element is None:
         return False
@@ -49,12 +47,8 @@ async def _add_image_item(
     cookies: str | None,
     headers: dict[str, str],
 ) -> None:
-    image_url = host.resolve_path(
-        html_dom.attribute_value(element, "src"), login_url
-    )
-    response = await host.requester.request(
-        image_url, cookies, referer=login_url, headers=headers
-    )
+    image_url = host.resolve_path(html_dom.attribute_value(element, "src"), login_url)
+    response = await host.requester.request(image_url, cookies, referer=login_url, headers=headers)
     host.config_data.add_dynamic(
         "CaptchaImage",
         DisplayImageItem("Captcha Image", response.content_bytes),
@@ -110,8 +104,6 @@ async def simple_captcha_fields(
     if script is None:
         return {}
     captcha_url = host.resolve_path("simpleCaptcha.php?numImages=1")
-    response = await host.requester.request(
-        captcha_url, None, referer=login_url, headers=headers
-    )
+    response = await host.requester.request(captcha_url, None, referer=login_url, headers=headers)
     selection = json.loads(response.content_string)["images"][0]["hash"]
     return {"captchaSelection": str(selection), "submitme": "X"}

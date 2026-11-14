@@ -130,9 +130,7 @@ def create_app(context: AppContext, load_indexers: bool = True) -> FastAPI:
     app.add_exception_handler(Exception, handle_exception)
     app.add_exception_handler(GuardFailureError, handle_guard_failure)
     for error_type, status_code in CLIENT_ERRORS.items():
-        app.add_exception_handler(
-            error_type, client_error_handler(status_code)
-        )
+        app.add_exception_handler(error_type, client_error_handler(status_code))
     if context.config.allow_cors:
         app.add_middleware(
             CORSMiddleware,

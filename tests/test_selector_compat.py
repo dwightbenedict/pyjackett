@@ -26,10 +26,7 @@ def document():
 
 
 def ids(document, selector):
-    return [
-        e.attributes.get("id")
-        for e in html_dom.query_selector_all(document, selector)
-    ]
+    return [e.attributes.get("id") for e in html_dom.query_selector_all(document, selector)]
 
 
 def test_has_may_be_nested(document):
@@ -43,17 +40,12 @@ def test_has_may_contain_complex_selectors(document):
 
 
 def test_nested_has_with_not_has(document):
-    selector = (
-        "div.box > div:has(p:has(a[href^='/torrent/']))"
-        ":not(:has(span.__cf_email__))"
-    )
+    selector = "div.box > div:has(p:has(a[href^='/torrent/'])):not(:has(span.__cf_email__))"
     assert ids(document, selector) == ["hit"]
 
 
 def test_dotnet_unicode_block_names_are_understood():
-    result = replace_all(
-        r"([\p{IsCJKUnifiedIdeographs}\W]+)", ".", "abc 你好 def"
-    )
+    result = replace_all(r"([\p{IsCJKUnifiedIdeographs}\W]+)", ".", "abc 你好 def")
     assert result == "abc.def"
 
 

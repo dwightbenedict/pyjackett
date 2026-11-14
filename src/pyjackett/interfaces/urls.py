@@ -29,7 +29,5 @@ def server_url(context: AppContext, request: Request) -> str:
     host_header = request.headers.get("host", "")
     host, _, port = host_header.partition(":")
     if not port:
-        port = str(
-            HTTPS_DEFAULT_PORT if scheme == "https" else request.url.port or 80
-        )
+        port = str(HTTPS_DEFAULT_PORT if scheme == "https" else request.url.port or 80)
     return f"{scheme}://{host}:{port}{base_path}/"

@@ -58,10 +58,7 @@ class ConfigurationData:
     def to_json(
         self, protector: Protector | None = None, for_display: bool = True
     ) -> list[dict[str, Any]]:
-        rendered = (
-            item.to_json(protector, for_display)
-            for item in self._items_for(for_display)
-        )
+        rendered = (item.to_json(protector, for_display) for item in self._items_for(for_display))
         return [data for data in rendered if data is not None]
 
     def load_values(

@@ -90,9 +90,7 @@ def select_tokens(root: Any, path: str) -> list[Any]:
     for kind, key in _tokenize(path):
         if kind == "name" and key == "*":
             kind = "wild"
-        current = [
-            child for node in current for child in _children(node, kind, key)
-        ]
+        current = [child for node in current for child in _children(node, kind, key)]
     return current
 
 

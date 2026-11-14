@@ -68,9 +68,7 @@ def sync_definitions_from(environ: Mapping[str, str]) -> bool:
 
 def cache_limit_from(environ: Mapping[str, str]) -> int:
     """Most releases the results cache may hold in total."""
-    return positive_int(environ, CACHE_MAX_RELEASES_ENV) or (
-        DEFAULT_CACHE_MAX_RELEASES
-    )
+    return positive_int(environ, CACHE_MAX_RELEASES_ENV) or (DEFAULT_CACHE_MAX_RELEASES)
 
 
 def apply_credentials(

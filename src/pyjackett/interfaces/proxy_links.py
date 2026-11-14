@@ -12,9 +12,7 @@ IMAGE_ACTION = "img"
 BLACKHOLE_ACTION = "bh"
 
 
-def proxy_release(
-    context: AppContext, release: ReleaseInfo, server_url: str
-) -> ReleaseInfo:
+def proxy_release(context: AppContext, release: ReleaseInfo, server_url: str) -> ReleaseInfo:
     """A copy of ``release`` with proxied link and poster."""
     proxied = release.clone()
     service = context.server_service
@@ -28,9 +26,7 @@ def proxy_release(
     return proxied
 
 
-def proxy_tracker_result(
-    context: AppContext, result: TrackerCacheResult, server_url: str
-) -> None:
+def proxy_tracker_result(context: AppContext, result: TrackerCacheResult, server_url: str) -> None:
     """Rewrite links of a dashboard result in place."""
     service = context.server_service
     original = result.link or result.magnet_uri

@@ -46,8 +46,7 @@ class GitHubDefinitionFeed:
 
     async def list_files(self) -> dict[str, str]:
         url = (
-            f"https://api.github.com/repos/{self._repository}"
-            f"/git/trees/{self._branch}:{self._path}"
+            f"https://api.github.com/repos/{self._repository}/git/trees/{self._branch}:{self._path}"
         )
         body = await self._get(url, "application/vnd.github+json")
         try:
@@ -55,13 +54,10 @@ class GitHubDefinitionFeed:
             return {
                 entry["path"]: entry["sha"]
                 for entry in entries
-                if entry["type"] == "blob"
-                and DEFINITION_NAME.fullmatch(entry["path"])
+                if entry["type"] == "blob" and DEFINITION_NAME.fullmatch(entry["path"])
             }
         except (ValueError, KeyError, TypeError) as error:
-            raise DefinitionFeedError(
-                "The definition listing is malformed"
-            ) from error
+            raise DefinitionFeedError("The definition listing is malformed") from error
 
     async def fetch(self, name: str) -> str:
         url = (
@@ -77,15 +73,9 @@ class GitHubDefinitionFeed:
     async def _get(self, url: str, accept: str) -> bytes:
         headers = {"Accept": accept, "User-Agent": f"PyJackett/{__version__}"}
         try:
-            response = await self._session.send(
-                {"method": "GET", "url": url, "headers": headers}
-            )
+            response = await self._session.send({"method": "GET", "url": url, "headers": headers})
         except Exception as error:
-            raise DefinitionFeedError(
-                f"Cannot reach {url}: {error}"
-            ) from error
+            raise DefinitionFeedError(f"Cannot reach {url}: {error}") from error
         if response.status_code != 200:
-            raise DefinitionFeedError(
-                f"{url} answered HTTP {response.status_code}"
-            )
+            raise DefinitionFeedError(f"{url} answered HTTP {response.status_code}")
         return response.content

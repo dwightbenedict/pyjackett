@@ -44,10 +44,7 @@ async def test_callers_share_the_test_already_running(context, indexer):
         await release.wait()
 
     indexer.verify = counted_verify
-    runs = [
-        asyncio.create_task(context.test_runner.run("faketracker"))
-        for _ in range(3)
-    ]
+    runs = [asyncio.create_task(context.test_runner.run("faketracker")) for _ in range(3)]
     await asyncio.sleep(0)
     release.set()
     await asyncio.gather(*runs)

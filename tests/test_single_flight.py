@@ -33,9 +33,7 @@ async def test_callers_with_one_key_share_a_single_run():
         await gate.wait()
         return [1, 2]
 
-    callers = [
-        asyncio.ensure_future(flights.run("k", work, list)) for _ in range(3)
-    ]
+    callers = [asyncio.ensure_future(flights.run("k", work, list)) for _ in range(3)]
     await settle()
     gate.set()
     results = await asyncio.gather(*callers)
@@ -153,9 +151,7 @@ class CountingIndexer(BaseIndexer):
 
 def make_indexer(tmp_path, slots=None) -> CountingIndexer:
     context = build_context(tmp_path, include_bundled=False, environ={})
-    deps = dataclasses.replace(
-        context.indexers._deps, search_limit=SearchLimit(slots)
-    )
+    deps = dataclasses.replace(context.indexers._deps, search_limit=SearchLimit(slots))
     return CountingIndexer(deps)
 
 
@@ -166,10 +162,7 @@ def query(term: str) -> TorznabQuery:
 async def test_identical_searches_hit_the_tracker_once(tmp_path):
     indexer = make_indexer(tmp_path)
     indexer.gate = asyncio.Event()
-    searches = [
-        asyncio.ensure_future(indexer.results_for_query(query("x")))
-        for _ in range(4)
-    ]
+    searches = [asyncio.ensure_future(indexer.results_for_query(query("x"))) for _ in range(4)]
     await settle()
     indexer.gate.set()
     results = await asyncio.gather(*searches)
@@ -194,10 +187,7 @@ async def test_a_failed_search_is_recorded_once_for_all_waiters(tmp_path):
     indexer = make_indexer(tmp_path)
     indexer.gate = asyncio.Event()
     indexer.fail = True
-    searches = [
-        asyncio.ensure_future(indexer.results_for_query(query("x")))
-        for _ in range(3)
-    ]
+    searches = [asyncio.ensure_future(indexer.results_for_query(query("x"))) for _ in range(3)]
     await settle()
     indexer.gate.set()
     results = await asyncio.gather(*searches, return_exceptions=True)
@@ -209,9 +199,7 @@ async def test_a_failed_search_is_recorded_once_for_all_waiters(tmp_path):
 @pytest.mark.parametrize("slots", [1, 2])
 async def test_searches_wait_for_a_free_slot(tmp_path, slots):
     indexer = make_indexer(tmp_path, slots)
-    await asyncio.gather(
-        *(indexer.results_for_query(query(str(n))) for n in range(6))
-    )
+    await asyncio.gather(*(indexer.results_for_query(query(str(n))) for n in range(6)))
     assert indexer.calls == 6
     assert indexer.peak <= slots
 

@@ -78,9 +78,7 @@ def client(tmp_path, site):
         client_factory=fakes.mock_network(site),
         include_bundled=False,
     )
-    with TestClient(
-        create_app(context), raise_server_exceptions=False
-    ) as test_client:
+    with TestClient(create_app(context), raise_server_exceptions=False) as test_client:
         sign_in_as_admin(test_client)
         test_client.api_key = context.config.api_key
         yield test_client
@@ -104,14 +102,10 @@ def test_an_api_key_of_the_wrong_length_is_rejected(client):
 
 def test_api_key_trackers_send_the_key_and_map_results(client, site):
     form = [{"id": "apikey", "value": API_KEY}]
-    assert (
-        client.post("/api/v2.0/indexers/orpheus/config", json=form).status_code
-        == 204
-    )
+    assert client.post("/api/v2.0/indexers/orpheus/config", json=form).status_code == 204
     items = search(client, "orpheus", q="album")
     assert [i.findtext("title") for i in items] == [
-        "Band - Album & More [2020] [Album] FLAC / Lossless / Log (100%) "
-        "/ Cue / CD / 1999 Deluxe"
+        "Band - Album & More [2020] [Album] FLAC / Lossless / Log (100%) / Cue / CD / 1999 Deluxe"
     ]
     request = site.requests[-1]
     assert request.headers["Authorization"] == f"token {API_KEY}"

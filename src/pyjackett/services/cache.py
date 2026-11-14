@@ -92,22 +92,16 @@ class ResultsCache:
 
     # ---- reading ----------------------------------------------------------
 
-    def search(
-        self, indexer: BaseIndexer, query: TorznabQuery
-    ) -> list[ReleaseInfo] | None:
+    def search(self, indexer: BaseIndexer, query: TorznabQuery) -> list[ReleaseInfo] | None:
         with self._lock:
             if not self._is_enabled():
                 return None
             self._prune_by_ttl()
             tracker = self._trackers.get(indexer.id)
-            cached = (
-                tracker.queries.get(_query_hash(query)) if tracker else None
-            )
+            cached = tracker.queries.get(_query_hash(query)) if tracker else None
             if cached is None:
                 return None
-            logger.debug(
-                "CACHE hit / %s: %d releases", indexer.id, len(cached.results)
-            )
+            logger.debug("CACHE hit / %s: %d releases", indexer.id, len(cached.results))
             return [release.clone() for release in cached.results]
 
     def cached_results(self) -> list[TrackerCacheResult]:
@@ -128,9 +122,7 @@ class ResultsCache:
     def _listing_for(tracker: _TrackerCache) -> list[TrackerCacheResult]:
         seen: set[str | None] = set()
         listing: list[TrackerCacheResult] = []
-        newest_first = sorted(
-            tracker.queries.values(), key=lambda q: q.created, reverse=True
-        )
+        newest_first = sorted(tracker.queries.values(), key=lambda q: q.created, reverse=True)
         for query in newest_first:
             for release in query.results:
                 if release.guid in seen:
@@ -167,9 +159,7 @@ class ResultsCache:
     def _prune_by_ttl(self) -> None:
         expiry = self._clock.now() - self.ttl
         for tracker in self._trackers.values():
-            expired = [
-                k for k, q in tracker.queries.items() if q.created < expiry
-            ]
+            expired = [k for k, q in tracker.queries.items() if q.created < expiry]
             for key in expired:
                 del tracker.queries[key]
 
@@ -192,13 +182,9 @@ class ResultsCache:
 
     def _prune_by_max_results(self, tracker: _TrackerCache) -> None:
         """Drop the oldest queries until the indexer fits its quota."""
-        newest_first = sorted(
-            tracker.queries.items(), key=lambda kv: kv[1].created, reverse=True
-        )
+        newest_first = sorted(tracker.queries.items(), key=lambda kv: kv[1].created, reverse=True)
         total = sum(len(q.results) for _, q in newest_first)
-        while (
-            total > self._config.cache_max_results_per_indexer and newest_first
-        ):
+        while total > self._config.cache_max_results_per_indexer and newest_first:
             key, oldest = newest_first.pop()
             del tracker.queries[key]
             total -= len(oldest.results)
