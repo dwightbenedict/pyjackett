@@ -7,8 +7,8 @@ import sys
 import tempfile
 from pathlib import Path
 
-from pyjackett.app_context import build_context
-from pyjackett.server.app import create_app
+from pyjackett.interfaces.api import create_app
+from pyjackett.wiring import build_context
 
 ROOT = Path(__file__).resolve().parent.parent
 

@@ -7,12 +7,12 @@ import dataclasses
 
 import pytest
 
-from pyjackett.app_context import build_context
-from pyjackett.core.query import TorznabQuery
-from pyjackett.core.release import ReleaseInfo
-from pyjackett.indexers.base import BaseIndexer
-from pyjackett.indexers.search_limit import SearchLimit
-from pyjackett.utils.single_flight import SingleFlight
+from pyjackett.domain.query import TorznabQuery
+from pyjackett.domain.release import ReleaseInfo
+from pyjackett.services.indexers.base import BaseIndexer
+from pyjackett.services.indexers.search_limit import SearchLimit
+from pyjackett.services.single_flight import SingleFlight
+from pyjackett.wiring import build_context
 
 
 async def settle() -> None:
@@ -189,7 +189,7 @@ async def test_different_searches_each_hit_the_tracker(tmp_path):
 
 
 async def test_a_failed_search_is_recorded_once_for_all_waiters(tmp_path):
-    from pyjackett.core.exceptions import IndexerError
+    from pyjackett.errors import IndexerError
 
     indexer = make_indexer(tmp_path)
     indexer.gate = asyncio.Event()
@@ -220,8 +220,8 @@ async def test_searches_wait_for_a_free_slot(tmp_path, slots):
 
 
 async def test_the_aggregate_skips_failing_indexers_when_asked(tmp_path):
-    from pyjackett.indexers.meta.imdb import ImdbSupport
-    from pyjackett.indexers.meta.meta_indexer import AggregateIndexer
+    from pyjackett.services.indexers.meta.imdb import ImdbSupport
+    from pyjackett.services.indexers.meta.meta_indexer import AggregateIndexer
 
     searched = []
 

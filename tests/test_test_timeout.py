@@ -6,7 +6,7 @@ import pytest
 from fastapi.testclient import TestClient
 from tests.conftest import sign_in_as_admin
 
-from pyjackett.server.app import create_app
+from pyjackett.interfaces.api import create_app
 
 V2 = "/api/v2.0"
 

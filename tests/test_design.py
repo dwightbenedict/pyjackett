@@ -4,16 +4,16 @@ from __future__ import annotations
 
 import pytest
 
-from pyjackett.cardigann.login import CardigannLogin
-from pyjackett.cardigann.methods import LoginMethod, request_type
-from pyjackett.config.server_config import ServerConfig
-from pyjackett.http.models import RequestType
-from pyjackett.indexers.meta.factory import (
+from pyjackett.domain.cardigann.methods import LoginMethod, request_type
+from pyjackett.domain.http_models import RequestType
+from pyjackett.domain.server_config import ServerConfig
+from pyjackett.services.cardigann.login import CardigannLogin
+from pyjackett.services.indexers.meta.factory import (
     MAX_EXPRESSION_FILTERS,
     MetaIndexerFactory,
 )
-from pyjackett.indexers.meta.meta_indexer import AggregateIndexer
-from pyjackett.indexers.registry import IndexerRegistry
+from pyjackett.services.indexers.meta.meta_indexer import AggregateIndexer
+from pyjackett.services.indexers.registry import IndexerRegistry
 
 
 @pytest.mark.parametrize(
@@ -109,7 +109,7 @@ def test_torznab_routes_answer_with_xml_errors(client, api_key):
 def test_rate_limit_is_its_own_error_type():
     from datetime import timedelta
 
-    from pyjackett.core.exceptions import (
+    from pyjackett.errors import (
         IndexerError,
         IndexerRateLimitedError,
         TooManyRequestsError,
@@ -123,7 +123,7 @@ def test_rate_limit_is_its_own_error_type():
 
 
 def test_health_uses_the_injected_clock():
-    from pyjackett.indexers.health import IndexerHealth
+    from pyjackett.services.indexers.health import IndexerHealth
 
     now = [100.0]
     health = IndexerHealth(clock=lambda: now[0])
@@ -136,8 +136,8 @@ def test_health_uses_the_injected_clock():
 
 
 async def test_retry_does_not_repeat_configuration_errors():
-    from pyjackett.core.exceptions import ConfigurationError
-    from pyjackett.indexers.retry import retry_request
+    from pyjackett.errors import ConfigurationError
+    from pyjackett.services.indexers.retry import retry_request
 
     calls = []
 
@@ -151,7 +151,7 @@ async def test_retry_does_not_repeat_configuration_errors():
 
 
 def test_filters_register_under_every_alias():
-    from pyjackett.cardigann.filters import FILTERS
+    from pyjackett.domain.cardigann.filters import FILTERS
 
     assert FILTERS["timeparse"] is FILTERS["dateparse"]
     assert FILTERS["reltime"] is FILTERS["timeago"]

@@ -9,10 +9,10 @@ import os
 import uvicorn
 
 from pyjackett import __version__
-from pyjackett.app_context import build_context
-from pyjackett.config.default_indexers import DEFAULT_PUBLIC_INDEXERS
-from pyjackett.config.environment import sync_definitions_from
-from pyjackett.server.app import create_app
+from pyjackett.domain.default_indexers import DEFAULT_PUBLIC_INDEXERS
+from pyjackett.interfaces.api import create_app
+from pyjackett.services.environment import sync_definitions_from
+from pyjackett.wiring import build_context
 
 LOG_FORMAT = "%(asctime)s %(levelname)s %(name)s: %(message)s"
 KEEP_ALIVE_SECONDS = 5  # idle connections are memory on a small host

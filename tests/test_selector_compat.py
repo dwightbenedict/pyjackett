@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from pyjackett.cardigann import html_dom
-from pyjackett.utils.regex_compat import replace_all
+from pyjackett.domain.cardigann import html_dom
+from pyjackett.domain.regex_compat import replace_all
 
 PAGE = """
 <table>

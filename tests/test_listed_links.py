@@ -5,13 +5,13 @@ from __future__ import annotations
 import shutil
 
 import fakes
-from pyjackett.app_context import build_context
-from pyjackett.cardigann import listed_links
-from pyjackett.cardigann.listed_links import (
+from pyjackett.adapters.paths import BUNDLED_DEFINITIONS_DIR
+from pyjackett.services.cardigann.listed_links import (
     RECHECK_SECONDS,
     hrefs_off_site,
     numbered_domains,
 )
+from pyjackett.wiring import build_context
 from test_injection import FakeClock
 
 STATUS_PAGE = """
@@ -30,10 +30,7 @@ STOP_USING = "1) old.example !STOP USING!"
 def indexer_for(tmp_path, clock, indexer_id, handler):
     definitions = tmp_path / "definitions"
     definitions.mkdir()
-    bundled = listed_links.__file__.replace(
-        r"cardigann\listed_links.py", "definitions"
-    ).replace("cardigann/listed_links.py", "definitions")
-    shutil.copy(f"{bundled}/{indexer_id}.yml", definitions)
+    shutil.copy(BUNDLED_DEFINITIONS_DIR / f"{indexer_id}.yml", definitions)
     context = build_context(
         tmp_path,
         extra_definition_dirs=[definitions],

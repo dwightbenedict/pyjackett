@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from pyjackett.cardigann.definition import FilterBlock
-from pyjackett.cardigann.filters import FilterContext, apply_filters
+from pyjackett.domain.cardigann.definition import FilterBlock
+from pyjackett.domain.cardigann.filters import FilterContext, apply_filters
 
 
 def run(value, name, args=None):

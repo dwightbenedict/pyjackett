@@ -1,0 +1,1 @@
+"""Pure entities and rules."""

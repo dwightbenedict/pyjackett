@@ -2,19 +2,19 @@
 
 from __future__ import annotations
 
-from pyjackett.core.capabilities import TorznabCapabilities
-from pyjackett.core.category_catalog import (
+from pyjackett.domain.capabilities import TorznabCapabilities
+from pyjackett.domain.category_catalog import (
     MOVIES,
     MOVIES_HD,
     TV,
     TVHD,
 )
-from pyjackett.core.category_lookup import get_category_by_name
-from pyjackett.core.query import TorznabQuery
-from pyjackett.core.search_modes import SearchMode
-from pyjackett.indexers.meta.filter_expression import parse_filter
-from pyjackett.server.query_parsing import manual_search_query
-from pyjackett.utils.log_cleansing import cleanse
+from pyjackett.domain.category_lookup import get_category_by_name
+from pyjackett.domain.log_cleansing import cleanse
+from pyjackett.domain.query import TorznabQuery
+from pyjackett.domain.search_modes import SearchMode
+from pyjackett.interfaces.query_parsing import manual_search_query
+from pyjackett.services.indexers.meta.filter_expression import parse_filter
 
 
 def test_catalog_tree():

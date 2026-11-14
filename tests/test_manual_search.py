@@ -9,9 +9,9 @@ from fastapi.testclient import TestClient
 from tests.conftest import FIXTURES
 
 import fakes
-from pyjackett.app_context import build_context
-from pyjackett.server import routes
-from pyjackett.server.app import create_app
+from pyjackett.interfaces import routes
+from pyjackett.interfaces.api import create_app
+from pyjackett.wiring import build_context
 
 API_RESPONSE = {
     "torrents": [

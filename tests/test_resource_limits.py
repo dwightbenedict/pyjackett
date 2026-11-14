@@ -6,9 +6,12 @@ import asyncio
 
 import pytest
 
-from pyjackett.app_context import build_context
-from pyjackett.cardigann.definition_cache import DefinitionCache
-from pyjackett.config.environment import (
+from pyjackett.adapters.definition_cache import DefinitionCache
+from pyjackett.domain.query import TorznabQuery
+from pyjackett.domain.release import ReleaseInfo
+from pyjackett.domain.server_config import ServerConfig
+from pyjackett.services.cache import ResultsCache
+from pyjackett.services.environment import (
     ADMIN_PASSWORD_ENV,
     API_KEY_ENV,
     CACHE_MAX_RELEASES_ENV,
@@ -24,11 +27,8 @@ from pyjackett.config.environment import (
     skip_failing_from,
     sync_definitions_from,
 )
-from pyjackett.config.server_config import ServerConfig
-from pyjackett.core.query import TorznabQuery
-from pyjackett.core.release import ReleaseInfo
-from pyjackett.indexers.search_limit import SearchLimit
-from pyjackett.services.cache import ResultsCache
+from pyjackett.services.indexers.search_limit import SearchLimit
+from pyjackett.wiring import build_context
 
 
 class Indexer:
@@ -207,7 +207,9 @@ class CountingParser:
         self.texts: list[str] = []
 
     def __call__(self, text: str):
-        from pyjackett.cardigann.definition_loader import parse_definition
+        from pyjackett.domain.cardigann.definition_loader import (
+            parse_definition,
+        )
 
         self.texts.append(text)
         return parse_definition(text)
@@ -288,8 +290,8 @@ def test_definition_cache_without_a_path_stores_nothing(tmp_path):
 
 
 def test_cardigann_source_parses_each_definition_once_per_text(tmp_path):
-    from pyjackett.indexers.dependencies import IndexerDependencies
-    from pyjackett.indexers.sources import CardigannSource
+    from pyjackett.services.indexers.dependencies import IndexerDependencies
+    from pyjackett.services.indexers.sources import CardigannSource
 
     definitions = tmp_path / "defs"
     definitions.mkdir()
@@ -323,7 +325,7 @@ def search_through_fake_tracker(tmp_path, environ):
 
     import fakes
     from conftest import FIXTURES, fake_tracker, sign_in_as_admin
-    from pyjackett.server.app import create_app
+    from pyjackett.interfaces.api import create_app
 
     context = build_context(
         tmp_path,

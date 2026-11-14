@@ -10,8 +10,8 @@ from fastapi.testclient import TestClient
 from tests.conftest import sign_in_as_admin
 
 import fakes
-from pyjackett.app_context import build_context
-from pyjackett.server.app import create_app
+from pyjackett.interfaces.api import create_app
+from pyjackett.wiring import build_context
 
 ROW = {
     "url": "https://avistaz.to/torrent/1-film",

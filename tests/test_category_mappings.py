@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from pyjackett.core.category_catalog import (
+from pyjackett.domain.category_catalog import (
     MOVIES,
     MOVIES_HD,
     MOVIES_SD,
     TV,
 )
-from pyjackett.core.category_mappings import (
+from pyjackett.domain.category_mappings import (
     CUSTOM_CATEGORY_OFFSET,
     CategoryMappings,
 )

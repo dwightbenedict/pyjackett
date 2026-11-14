@@ -3,15 +3,15 @@
 from __future__ import annotations
 
 import shutil
-from pathlib import Path
 
 import fakes
-from pyjackett.app_context import build_context
-from pyjackett.cardigann import rotating_links
-from pyjackett.cardigann.rotating_links import AddressPageLinks
+from pyjackett.adapters.paths import BUNDLED_DEFINITIONS_DIR
+from pyjackett.domain.cardigann import rotating_links
+from pyjackett.domain.cardigann.rotating_links import AddressPageLinks
+from pyjackett.wiring import build_context
 from test_injection import FakeClock
 
-BUNDLED = Path(rotating_links.__file__).parents[1] / "definitions"
+BUNDLED = BUNDLED_DEFINITIONS_DIR
 PAGE = AddressPageLinks("529075.xyz", salt="address-page-2026")
 SLOT_SECONDS = 30 * 60
 

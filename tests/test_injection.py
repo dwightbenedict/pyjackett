@@ -8,19 +8,19 @@ from datetime import datetime, timedelta
 import pytest
 
 import fakes
-from pyjackett.config.server_config import ServerConfig
-from pyjackett.http.client import WebClient
-from pyjackett.http.models import WebRequest, WebResult
-from pyjackett.http.session import HttpSession
-from pyjackett.indexers.retry import retry_request
+from pyjackett.adapters.clock import Stopwatch
+from pyjackett.adapters.http.client import WebClient
+from pyjackett.adapters.http.session import HttpSession
+from pyjackett.domain.http_models import WebRequest, WebResult
+from pyjackett.domain.server_config import ServerConfig
 from pyjackett.services.cache import ResultsCache
+from pyjackett.services.indexers.retry import retry_request
 from pyjackett.services.log_cache import LogCache
 from pyjackett.services.security import (
     SECONDS_PER_DAY,
     SESSION_DAYS,
     SecurityService,
 )
-from pyjackett.utils.clock import Stopwatch
 
 
 class FakeClock:
@@ -83,7 +83,7 @@ async def test_web_client_throttles_with_the_injected_clock():
 
 
 def test_cache_expires_entries_by_the_injected_clock():
-    from pyjackett.core.query import TorznabQuery
+    from pyjackett.domain.query import TorznabQuery
 
     clock = FakeClock()
     config = ServerConfig()
@@ -147,7 +147,7 @@ def test_log_cache_clear_drops_collected_entries():
 
 
 def test_context_takes_the_environment_and_clock_from_its_caller(tmp_path):
-    from pyjackett.app_context import build_context
+    from pyjackett.wiring import build_context
 
     clock = FakeClock()
     context = build_context(
@@ -164,9 +164,9 @@ def test_context_takes_the_environment_and_clock_from_its_caller(tmp_path):
 
 @pytest.mark.parametrize("found", [True, False])
 async def test_indexer_verify_raises_a_domain_error(found):
-    from pyjackett.core.exceptions import IndexerTestFailedError
-    from pyjackett.indexers.base import BaseIndexer
-    from pyjackett.indexers.result import IndexerResult
+    from pyjackett.errors import IndexerTestFailedError
+    from pyjackett.services.indexers.base import BaseIndexer
+    from pyjackett.services.indexers.result import IndexerResult
 
     class Stub(BaseIndexer):
         id = name = "stub"
@@ -201,7 +201,7 @@ def test_log_cache_entries_carry_a_short_source_and_plain_message():
 
 
 def test_impersonation_defaults_to_chrome_and_can_be_switched_off():
-    from pyjackett.http.session import impersonation_from
+    from pyjackett.adapters.http.session import impersonation_from
 
     assert impersonation_from({}) == "chrome"
     assert impersonation_from({"PYJACKETT_IMPERSONATE": "safari"}) == "safari"
@@ -227,7 +227,7 @@ async def test_session_opens_its_connection_with_the_impersonation():
 
 
 def test_impersonated_browser_requests_leave_headers_to_the_client():
-    from pyjackett.http.request_builder import build_request_kwargs
+    from pyjackett.adapters.http.request_builder import build_request_kwargs
 
     request = WebRequest(url="http://tracker.test/", emulate_browser=True)
     headers = build_request_kwargs(request, impersonating=True)["headers"]
@@ -235,7 +235,7 @@ def test_impersonated_browser_requests_leave_headers_to_the_client():
 
 
 def test_impersonated_requests_keep_site_and_clearance_headers():
-    from pyjackett.http.request_builder import build_request_kwargs
+    from pyjackett.adapters.http.request_builder import build_request_kwargs
 
     request = WebRequest(
         url="http://tracker.test/",
@@ -249,7 +249,7 @@ def test_impersonated_requests_keep_site_and_clearance_headers():
 
 
 def test_api_requests_and_unimpersonated_sessions_keep_the_defaults():
-    from pyjackett.http.request_builder import build_request_kwargs
+    from pyjackett.adapters.http.request_builder import build_request_kwargs
 
     api = WebRequest(url="http://tracker.test/", emulate_browser=False)
     api_headers = build_request_kwargs(api, impersonating=True)["headers"]

@@ -9,9 +9,9 @@ from fastapi.testclient import TestClient
 from tests.conftest import sign_in_as_admin
 
 import fakes
-from pyjackett.app_context import build_context
-from pyjackett.indexers.provisioning import PublicIndexerProvisioner
-from pyjackett.server.app import create_app
+from pyjackett.interfaces.api import create_app
+from pyjackett.services.indexers.provisioning import PublicIndexerProvisioner
+from pyjackett.wiring import build_context
 
 PRIVATE_DEFINITION = """\
 id: secretsite
@@ -169,7 +169,7 @@ DEFAULT = frozenset({"default"})
     ],
 )
 def test_public_indexers_from_the_environment(value, expected):
-    from pyjackett.config.environment import (
+    from pyjackett.services.environment import (
         INDEXERS_ENV,
         public_indexers_from,
     )
@@ -179,7 +179,7 @@ def test_public_indexers_from_the_environment(value, expected):
 
 
 def test_default_indexers_are_all_real_public_indexers():
-    from pyjackett.config.default_indexers import DEFAULT_PUBLIC_INDEXERS
+    from pyjackett.domain.default_indexers import DEFAULT_PUBLIC_INDEXERS
 
     context = build_context(Path(__import__("tempfile").mkdtemp()), environ={})
     context.indexers.init_indexers()

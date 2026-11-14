@@ -7,7 +7,7 @@ import threading
 from collections import deque
 from datetime import datetime
 
-from pyjackett.utils.log_cleansing import cleanse
+from pyjackett.domain.log_cleansing import cleanse
 
 MAX_LOG_ENTRIES = 200
 LOG_FORMAT = "%(message)s"

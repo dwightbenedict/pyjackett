@@ -9,21 +9,21 @@ import pytest
 
 import fakes
 from conftest import FIXTURES
-from pyjackett.app_context import build_context
-from pyjackett.config.server_config import ServerConfig
-from pyjackett.core.exceptions import DefinitionFeedError
-from pyjackett.definition_sync.feed import GitHubDefinitionFeed
-from pyjackett.definition_sync.store import DefinitionStore
-from pyjackett.definition_sync.task import (
+from pyjackett.adapters.definition_feed import GitHubDefinitionFeed
+from pyjackett.adapters.definition_store import DefinitionStore
+from pyjackett.adapters.http.session import HttpSession
+from pyjackett.domain.server_config import ServerConfig
+from pyjackett.errors import DefinitionFeedError
+from pyjackett.services.definition_sync.task import (
     RETRY_SECONDS,
     SYNC_INTERVAL_SECONDS,
     DefinitionSyncTask,
 )
-from pyjackett.definition_sync.updater import (
+from pyjackett.services.definition_sync.updater import (
     DefinitionChanges,
     DefinitionUpdater,
 )
-from pyjackett.http.session import HttpSession
+from pyjackett.wiring import build_context
 from test_injection import FakeClock
 
 TEMPLATE = (FIXTURES / "faketracker.yml").read_text("utf-8")

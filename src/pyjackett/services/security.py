@@ -6,13 +6,13 @@ import hashlib
 import hmac
 from collections.abc import Callable
 
-from pyjackett.config.server_config import ServerConfig
-from pyjackett.config.server_config_store import generate_api_key
-from pyjackett.core.exceptions import (
+from pyjackett.adapters.clock import SYSTEM_CLOCK, Clock
+from pyjackett.adapters.server_config_store import generate_api_key
+from pyjackett.domain.server_config import ServerConfig
+from pyjackett.errors import (
     InvalidCredentialsError,
     InvalidPasswordError,
 )
-from pyjackett.utils.clock import SYSTEM_CLOCK, Clock
 
 DEFAULT_CREDENTIAL = "admin"
 SESSION_DAYS = 14

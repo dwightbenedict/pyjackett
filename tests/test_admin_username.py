@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from pyjackett.app_context import build_context
+from pyjackett.wiring import build_context
 
 V2 = "/api/v2.0"
 

@@ -9,10 +9,10 @@ from fastapi.testclient import TestClient
 from tests.conftest import FIXTURES, fake_tracker, sign_in_as_admin
 
 import fakes
-from pyjackett.app_context import build_context
-from pyjackett.core.exceptions import IndexerTestFailedError
-from pyjackett.server.app import create_app
+from pyjackett.errors import IndexerTestFailedError
+from pyjackett.interfaces.api import create_app
 from pyjackett.services.stats import SearchRecorder
+from pyjackett.wiring import build_context
 
 V1 = "/api/v1"
 PRIVATE_DEFINITION = (

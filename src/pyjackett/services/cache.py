@@ -14,14 +14,14 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING
 
-from pyjackett.config.server_config import ServerConfig
-from pyjackett.core.query import TorznabQuery
-from pyjackett.core.release import ReleaseInfo
-from pyjackett.core.tracker_result import TrackerCacheResult
-from pyjackett.utils.clock import SYSTEM_CLOCK, Clock
+from pyjackett.adapters.clock import SYSTEM_CLOCK, Clock
+from pyjackett.domain.query import TorznabQuery
+from pyjackett.domain.release import ReleaseInfo
+from pyjackett.domain.server_config import ServerConfig
+from pyjackett.domain.tracker_result import TrackerCacheResult
 
 if TYPE_CHECKING:
-    from pyjackett.indexers.base import BaseIndexer
+    from pyjackett.services.indexers.base import BaseIndexer
 
 logger = logging.getLogger(__name__)
 

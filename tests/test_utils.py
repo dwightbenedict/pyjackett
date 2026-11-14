@@ -6,13 +6,13 @@ from datetime import datetime, timedelta
 
 import pytest
 
-from pyjackett.utils import bencode, cookies, dates, numbers
-from pyjackett.utils.date_formats import net_format_to_strptime
-from pyjackett.utils.magnet import (
+from pyjackett.domain import bencode, cookies, dates, numbers
+from pyjackett.domain.date_formats import net_format_to_strptime
+from pyjackett.domain.magnet import (
     info_hash_to_public_magnet,
     magnet_to_info_hash,
 )
-from pyjackett.utils.urls import get_query_argument, resolve_url
+from pyjackett.domain.urls import get_query_argument, resolve_url
 
 
 @pytest.mark.parametrize(

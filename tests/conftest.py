@@ -8,8 +8,8 @@ import pytest
 from fastapi.testclient import TestClient
 
 import fakes
-from pyjackett.app_context import build_context
-from pyjackett.server.app import create_app
+from pyjackett.interfaces.api import create_app
+from pyjackett.wiring import build_context
 
 FIXTURES = Path(__file__).parent / "fixtures"
 

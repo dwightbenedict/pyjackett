@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from urllib.parse import quote_plus
 
-from pyjackett.config.protection import ProtectionService
-from pyjackett.config.server_config import ServerConfig
-from pyjackett.utils.urls import base64url_encode
+from pyjackett.adapters.protection import ProtectionService
+from pyjackett.domain.server_config import ServerConfig
+from pyjackett.domain.urls import base64url_encode
 
 MAGNET_PREFIX = "magnet:"
 BLACKHOLE_ACTION = "bh"

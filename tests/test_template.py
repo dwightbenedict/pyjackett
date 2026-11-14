@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from pyjackett.cardigann.template import apply_template
-from pyjackett.utils.urls import url_encode
+from pyjackett.domain.cardigann.template import apply_template
+from pyjackett.domain.urls import url_encode
 
 
 @pytest.fixture

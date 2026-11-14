@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-from pyjackett.core.exceptions import (
+from pyjackett.errors import (
     IndexerError,
     IndexerTestFailedError,
     describe_failure,

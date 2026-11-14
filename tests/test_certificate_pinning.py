@@ -7,9 +7,9 @@ import hashlib
 import pytest
 
 import fakes
-from pyjackett.config.server_config import ServerConfig
-from pyjackett.http.certificates import TrustedCertificates
-from pyjackett.http.session import HttpSession, PinnedCertificateError
+from pyjackett.adapters.http.certificates import TrustedCertificates
+from pyjackett.adapters.http.session import HttpSession, PinnedCertificateError
+from pyjackett.domain.server_config import ServerConfig
 
 CERTIFICATE = b"der-bytes"
 

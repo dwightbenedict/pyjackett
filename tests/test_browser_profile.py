@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 import fakes
-from pyjackett.config.server_config import ServerConfig
-from pyjackett.http.browser_profile import impersonation_for
-from pyjackett.http.client import WebClient
-from pyjackett.http.flaresolverr import Solution
-from pyjackett.http.models import WebRequest, WebResult
-from pyjackett.http.session import HttpSession
+from pyjackett.adapters.http.browser_profile import impersonation_for
+from pyjackett.adapters.http.client import WebClient
+from pyjackett.adapters.http.flaresolverr import Solution
+from pyjackett.adapters.http.session import HttpSession
+from pyjackett.domain.http_models import WebRequest, WebResult
+from pyjackett.domain.server_config import ServerConfig
 
 PROFILES = ["chrome131", "chrome133a", "chrome142", "chrome152", "firefox144"]
 SOLVED_USER_AGENT = (

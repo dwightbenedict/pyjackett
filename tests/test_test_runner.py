@@ -6,7 +6,7 @@ import asyncio
 
 import pytest
 
-from pyjackett.core.exceptions import IndexerTestFailedError
+from pyjackett.errors import IndexerTestFailedError
 
 V1 = "/api/v1"
 

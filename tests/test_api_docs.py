@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from pyjackett.server.api_docs import API_TAGS
+from pyjackett.interfaces.api_docs import API_TAGS
 
 V1 = "/api/v1"
 METHODS = {"get", "post", "put", "patch", "delete"}

@@ -7,7 +7,7 @@ from collections import deque
 from dataclasses import asdict, dataclass
 from typing import Any
 
-from pyjackett.utils.clock import SYSTEM_CLOCK, Clock
+from pyjackett.adapters.clock import SYSTEM_CLOCK, Clock
 
 MAX_HISTORY_ENTRIES = 200
 
