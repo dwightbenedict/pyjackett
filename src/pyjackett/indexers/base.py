@@ -58,6 +58,7 @@ class BaseIndexer(ABC):
     legacy_site_links: tuple[str, ...] = ()
     supports_pagination: bool = False
     caches_results: bool = True  # meta indexers leave this to their members
+    limits_concurrency = True  # meta indexers only wait for their members
 
     def __init__(
         self,
@@ -179,6 +180,10 @@ class BaseIndexer(ABC):
         self.site_link = self.default_site_link
         self.cookie_header = ""
 
+    def same_definition_as(self, other: BaseIndexer) -> bool:
+        """Whether ``other`` behaves like this one (no reload needed)."""
+        return True
+
     @abstractmethod
     async def apply_configuration(
         self, config: list[dict[str, Any]]
@@ -214,18 +219,59 @@ class BaseIndexer(ABC):
         """Run a search through cache, tracker, filtering and clean-up."""
         query = query.clone()  # indexers may modify the query
         if not self._accepts(query, is_meta_indexer):
+            logger.debug(
+                "%s skipped query %r: not supported",
+                self.name,
+                query.query_string(),
+            )
             return IndexerResult(self)
         cached = self._cached_result(query)
         if cached is not None:
+            logger.info(
+                "%s served %d cached releases for %r",
+                self.name,
+                len(cached.releases),
+                query.query_string(),
+            )
+            self._deps.stats.record_cache_hit(
+                self.id, query.query_string(), len(cached.releases)
+            )
             return cached
+        return await self._deps.single_flight.run(
+            f"{self.id}:{query.cache_key()}",
+            lambda: self._search_once(query),
+            self._copy_of,
+        )
+
+    async def _search_once(self, query: TorznabQuery) -> IndexerResult:
+        """Search the tracker; failures are recorded once per search, not
+        once per client waiting for it."""
         try:
-            return await self._search_tracker(query)
+            return await self._search_in_slot(query)
         except TooManyRequestsError as error:
             self.health.record_rate_limit(error.retry_after.total_seconds())
+            self._record_failure(query, error, rate_limited=True)
             raise IndexerRateLimitedError(self, error) from error
         except Exception as error:
             self.health.record_failure()
+            self._record_failure(query, error, rate_limited=False)
             raise IndexerError(self, error) from error
+
+    async def _search_in_slot(self, query: TorznabQuery) -> IndexerResult:
+        if not self.limits_concurrency:
+            return await self._search_tracker(query)
+        async with self._deps.search_limit.slot():
+            return await self._search_tracker(query)
+
+    @staticmethod
+    def _copy_of(result: IndexerResult) -> IndexerResult:
+        """What a client that shared a search gets, free to be changed."""
+        return IndexerResult(
+            result.indexer,
+            [release.clone() for release in result.releases],
+            result.elapsed_ms,
+            result.is_from_cache,
+        )
 
     async def verify(self) -> None:
         """Run a blank search; fails when the tracker returns nothing."""
@@ -239,10 +285,8 @@ class BaseIndexer(ABC):
         )
         if not result.releases:
             raise IndexerTestFailedError(
-                f"Test search in {self.name} => Found no results while "
-                "trying to browse this tracker. This may be an issue with "
-                "the indexer, or other indexer settings such as search "
-                "freeleech only etc."
+                "No results. Check the indexer settings, e.g. freeleech only.",
+                result.elapsed_ms,
             )
 
     # ---- steps subclasses may specialise ------------------------------------
@@ -268,12 +312,40 @@ class BaseIndexer(ABC):
         return IndexerResult(self, releases, 0, True)
 
     async def _search_tracker(self, query: TorznabQuery) -> IndexerResult:
+        logger.info("%s searching for %r", self.name, query.query_string())
         stopwatch = Stopwatch(self._clock)
         releases = await self.perform_query(query)
         elapsed_ms = stopwatch.elapsed_ms
+        raw_count = len(releases)
         releases = self._post_process(query, releases)
+        logger.info(
+            "%s found %d releases (%d before filtering) in %dms",
+            self.name,
+            len(releases),
+            raw_count,
+            elapsed_ms,
+        )
         self._record_outcome(query, releases)
+        self._deps.stats.record_success(
+            self.id, query.query_string(), len(releases), elapsed_ms
+        )
         return IndexerResult(self, releases, elapsed_ms, False)
+
+    def _record_failure(
+        self, query: TorznabQuery, error: Exception, rate_limited: bool
+    ) -> None:
+        if rate_limited:
+            logger.warning("%s was rate limited: %s", self.name, error)
+        else:
+            logger.error(
+                "%s search for %r failed: %s",
+                self.name,
+                query.query_string(),
+                error,
+            )
+        self._deps.stats.record_failure(
+            self.id, query.query_string(), str(error), rate_limited
+        )
 
     def _record_outcome(
         self, query: TorznabQuery, releases: list[ReleaseInfo]

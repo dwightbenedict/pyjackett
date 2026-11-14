@@ -7,7 +7,7 @@ from collections.abc import Iterable
 from pathlib import Path
 from typing import Protocol
 
-from pyjackett.cardigann.definition_loader import parse_definition
+from pyjackett.cardigann.definition_cache import DefinitionCache
 from pyjackett.cardigann.indexer import CardigannIndexer
 from pyjackett.indexers.base import BaseIndexer
 from pyjackett.indexers.dependencies import IndexerDependencies
@@ -48,27 +48,35 @@ class CardigannSource:
 
     name = "Cardigann"
 
-    def __init__(self, definition_dirs: Iterable[Path]) -> None:
+    def __init__(
+        self,
+        definition_dirs: Iterable[Path],
+        cache: DefinitionCache | None = None,
+    ) -> None:
         self._definition_dirs = list(definition_dirs)
+        self._cache = cache or DefinitionCache()
 
     def load(self, dependencies: IndexerDependencies) -> list[BaseIndexer]:
         created = (self._create(dependencies, path) for path in self._files())
-        return [indexer for indexer in created if indexer is not None]
+        indexers = [indexer for indexer in created if indexer is not None]
+        self._cache.save()
+        return indexers
 
     def _files(self) -> list[Path]:
-        return sorted(
-            file
+        """Every definition file; a later directory overrides an earlier."""
+        by_name = {
+            file.name: file
             for directory in self._definition_dirs
             if directory.is_dir()
             for file in directory.glob("*.yml")
-        )
+        }
+        return [by_name[name] for name in sorted(by_name)]
 
-    @staticmethod
     def _create(
-        dependencies: IndexerDependencies, path: Path
+        self, dependencies: IndexerDependencies, path: Path
     ) -> CardigannIndexer | None:
         try:
-            definition = parse_definition(path.read_text(encoding="utf-8"))
+            definition = self._cache.parse(path.read_text(encoding="utf-8"))
         except Exception:
             logger.exception("Error while parsing definition %s", path)
             return None

@@ -39,7 +39,8 @@ class BaseWebIndexer(BaseIndexer):
 
     @property
     def default_retry_attempts(self) -> int:
-        return DEFAULT_RETRY_ATTEMPTS
+        configured = self._deps.retries
+        return DEFAULT_RETRY_ATTEMPTS if configured is None else configured
 
     def retry_attempts(self) -> int:
         """User configured number of retries, else the indexer default."""

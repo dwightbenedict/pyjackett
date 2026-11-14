@@ -13,11 +13,22 @@ import functools
 import regex
 
 _REPLACEMENT_TOKEN = regex.compile(r"\$(?:(\$)|(&)|(\d+)|\{(\w+)\})")
+_NET_BLOCK = regex.compile(r"(\\[pP]\{)Is(?=\w)")
+
+
+def _with_block_names(pattern: str) -> str:
+    """Respell .NET blocks (``IsBasicLatin``) the way ``regex`` knows them."""
+    return _NET_BLOCK.sub(r"\1In", pattern)
 
 
 @functools.lru_cache(maxsize=2048)
 def compile_pattern(pattern: str) -> regex.Pattern:
-    return regex.compile(pattern)
+    try:
+        return regex.compile(pattern)
+    except regex.error:
+        # scripts such as ``Is`` + ``Cyrillic`` compile as they are, blocks
+        # such as ``Is`` + ``CJKUnifiedIdeographs`` need the ``In`` spelling
+        return regex.compile(_with_block_names(pattern))
 
 
 def _group_text(match: regex.Match, key: int | str) -> str | None:
@@ -55,6 +66,8 @@ def expand_replacement(match: regex.Match, replacement: str) -> str:
 def replace_all(pattern: str, replacement: str, text: str) -> str:
     """``Regex.Replace`` equivalent."""
     compiled = compile_pattern(pattern)
+    if "$" not in replacement and "\\" not in replacement:
+        return compiled.sub(replacement, text)  # literal: no callback
     return compiled.sub(lambda m: expand_replacement(m, replacement), text)
 
 

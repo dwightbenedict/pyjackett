@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from http.cookies import SimpleCookie
 from typing import Protocol
 
-import httpx
+from curl_cffi.requests import AsyncSession
 
 from pyjackett.http.models import RequestType, WebRequest, WebResult
 
@@ -106,14 +106,13 @@ class FlareSolverrClient:
         url: str,
         max_timeout: int = 55000,
         proxy: dict | None = None,
-        transport: httpx.AsyncBaseTransport | None = None,
-        client_factory: Callable[..., httpx.AsyncClient] = httpx.AsyncClient,
+        client_factory: Callable[..., AsyncSession] = AsyncSession,
     ) -> None:
         self._endpoint = _endpoint(url)
         self._max_timeout = max_timeout
         self._proxy = proxy
         timeout = max_timeout / 1000 + _TIMEOUT_MARGIN_SECONDS
-        self._http = client_factory(timeout=timeout, transport=transport)
+        self._http = client_factory(timeout=timeout)
 
     async def solve(self, request: WebRequest) -> Solution:
         payload = _payload(request, self._max_timeout, self._proxy)
@@ -143,4 +142,4 @@ class FlareSolverrClient:
         return Solution(result, cookies, solution.get("userAgent"))
 
     async def aclose(self) -> None:
-        await self._http.aclose()
+        await self._http.close()

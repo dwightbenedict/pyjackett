@@ -4,9 +4,8 @@ from __future__ import annotations
 
 import logging
 
-from bs4 import Tag
-
 from pyjackett.cardigann import html_dom
+from pyjackett.cardigann.html_dom import Element
 from pyjackett.cardigann.html_selectors import handle_selector
 from pyjackett.cardigann.result_context import ResultContext
 from pyjackett.cardigann.row_filters import should_skip_row
@@ -18,7 +17,7 @@ from pyjackett.utils import dates
 logger = logging.getLogger(__name__)
 
 
-def merge_following_rows(rows: list[Tag], count: int) -> list[Tag]:
+def merge_following_rows(rows: list[Element], count: int) -> list[Element]:
     """Fold each group of ``count`` rows after a row into that row.
 
     Used by trackers that spread one result over several ``<tr>``.
@@ -31,8 +30,7 @@ def merge_following_rows(rows: list[Tag], count: int) -> list[Tag]:
         current = remaining[index]
         following = remaining[index + 1 : index + 1 + count]
         for row in following:
-            for child in list(row.contents):
-                current.append(child)
+            html_dom.copy_children(row, current)
         del remaining[index + 1 : index + 1 + count]
         index += 1
     return remaining
@@ -40,7 +38,7 @@ def merge_following_rows(rows: list[Tag], count: int) -> list[Tag]:
 
 def select_rows(
     document, context: ResultContext, variables: Variables
-) -> list[Tag]:
+) -> list[Element]:
     rows_block = context.search.rows
     selector = apply_template(rows_block.selector, variables)
     rows = list(html_dom.query_selector_all(document, selector))
@@ -50,21 +48,17 @@ def select_rows(
 # ---- date headers -----------------------------------------------------------
 
 
-def _previous_candidate(element: Tag) -> Tag | None:
+def _previous_candidate(element: Element) -> Element | None:
     """Previous sibling, or the parent's previous sibling at the start."""
-    previous = element.find_previous_sibling(True)
-    if previous is None and element.parent is not None:
-        parent = element.parent
-        previous = (
-            parent.find_previous_sibling(True)
-            if isinstance(parent, Tag)
-            else None
-        )
+    previous = html_dom.previous_element(element)
+    parent = html_dom.parent_element(element)
+    if previous is None and parent is not None:
+        previous = html_dom.previous_element(parent)
     return previous
 
 
 def find_date_header(
-    row: Tag, context: ResultContext, variables
+    row: Element, context: ResultContext, variables
 ) -> str | None:
     """Walk backwards from ``row`` to the nearest date heading."""
     block = context.search.rows.dateheaders
@@ -80,7 +74,7 @@ def find_date_header(
 
 
 def _apply_date_header(
-    row: Tag, release: ReleaseInfo, context: ResultContext, variables
+    row: Element, release: ReleaseInfo, context: ResultContext, variables
 ) -> None:
     block = context.search.rows.dateheaders
     if block is None or release.publish_date is not None:
@@ -96,7 +90,7 @@ def _apply_date_header(
 
 
 def _parse_row(
-    row: Tag,
+    row: Element,
     context: ResultContext,
     variables: Variables,
     query: TorznabQuery,
@@ -116,7 +110,7 @@ def _parse_row(
         query,
         context.caps,
         variables,
-        row.prettify(),
+        html_dom.to_html(row),
         context.indexer_id,
     )
     if skip:
@@ -135,6 +129,8 @@ def parse_html_results(
     """Parse every row of a document; unparsable rows are logged, skipped."""
     releases = []
     for row in select_rows(document, context, variables):
+        if context.is_full(releases):
+            break
         try:
             release = _parse_row(row, context, variables, query, search_url)
         except Exception:

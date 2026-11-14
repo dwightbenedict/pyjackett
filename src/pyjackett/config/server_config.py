@@ -7,6 +7,9 @@ from dataclasses import dataclass, fields
 from enum import IntEnum
 from typing import Any
 
+# Long enough for slow trackers, short enough that a dead one fails the test.
+DEFAULT_TEST_TIMEOUT = 30
+
 
 class ProxyType(IntEnum):
     DISABLED = -1
@@ -23,6 +26,7 @@ JSON_KEYS: dict[str, str] = {
     "allow_cors": "AllowCORS",
     "api_key": "APIKey",
     "admin_password": "AdminPassword",
+    "admin_username": "AdminUsername",
     "instance_id": "InstanceId",
     "blackhole_dir": "BlackholeDir",
     "update_disabled": "UpdateDisabled",
@@ -32,6 +36,7 @@ JSON_KEYS: dict[str, str] = {
     "cache_enabled": "CacheEnabled",
     "cache_ttl": "CacheTtl",
     "cache_max_results_per_indexer": "CacheMaxResultsPerIndexer",
+    "test_timeout": "TestTimeout",
     "flaresolverr_url": "FlareSolverrUrl",
     "flaresolverr_max_timeout": "FlareSolverrMaxTimeout",
     "omdb_api_key": "OmdbApiKey",
@@ -54,6 +59,7 @@ class ServerConfig:
     allow_cors: bool = False
     api_key: str | None = None
     admin_password: str | None = None
+    admin_username: str | None = None
     instance_id: str | None = None
     blackhole_dir: str | None = None
     update_disabled: bool = False
@@ -64,6 +70,8 @@ class ServerConfig:
     # 35 minutes suits Sonarr/Radarr/Lidarr/Readarr polling intervals
     cache_ttl: int = 2100
     cache_max_results_per_indexer: int = 1000
+    # seconds an indexer test may take before it counts as failed
+    test_timeout: int = DEFAULT_TEST_TIMEOUT
     flaresolverr_url: str | None = None
     flaresolverr_max_timeout: int = 55000
     omdb_api_key: str | None = None

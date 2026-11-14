@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 from urllib.parse import urlsplit
 
+from pyjackett.http.browser_profile import impersonation_for
 from pyjackett.http.flaresolverr import is_cloudflare_challenge
 from pyjackett.http.models import WebRequest, WebResult
 from pyjackett.http.request_builder import build_request_kwargs
@@ -91,9 +92,20 @@ class WebClient:
         cookies, user_agent = self._clearance_for(request.url)
         if cookies:
             request = self._with_cookies(request, cookies)
-        kwargs = build_request_kwargs(request, user_agent)
+        kwargs = build_request_kwargs(
+            request, user_agent, self._session.impersonating
+        )
+        profile = self._clearance_profile(user_agent)
+        if profile:
+            kwargs["impersonate"] = profile
         response = await self._session.send(kwargs)
         return build_web_result(response, request)
+
+    def _clearance_profile(self, user_agent: str | None) -> str | None:
+        """Match the TLS fingerprint to the browser that got the clearance."""
+        if not (user_agent and self._session.impersonating):
+            return None
+        return impersonation_for(user_agent)
 
     @staticmethod
     def _with_cookies(request: WebRequest, cookies: str) -> WebRequest:

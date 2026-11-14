@@ -52,10 +52,14 @@ class ResultsCache:
     """Thread-safe store of releases keyed by indexer and query."""
 
     def __init__(
-        self, config: ServerConfig, clock: Clock = SYSTEM_CLOCK
+        self,
+        config: ServerConfig,
+        clock: Clock = SYSTEM_CLOCK,
+        max_total_results: int | None = None,
     ) -> None:
         self._config = config
         self._clock = clock
+        self._max_total_results = max_total_results
         self._trackers: dict[str, _TrackerCache] = {}
         self._lock = threading.RLock()
 
@@ -84,6 +88,7 @@ class ResultsCache:
                 self._clock.now(), [release.clone() for release in releases]
             )
             self._prune_by_max_results(tracker)
+            self._prune_by_total_results()
 
     # ---- reading ----------------------------------------------------------
 
@@ -167,6 +172,23 @@ class ResultsCache:
             ]
             for key in expired:
                 del tracker.queries[key]
+
+    def _prune_by_total_results(self) -> None:
+        """Drop the oldest queries of any indexer until the cache fits."""
+        if self._max_total_results is None:
+            return
+        entries = [
+            (query.created, tracker, key, len(query.results))
+            for tracker in self._trackers.values()
+            for key, query in tracker.queries.items()
+        ]
+        total = sum(size for *_, size in entries)
+        entries.sort(key=lambda entry: entry[0])
+        for _, tracker, key, size in entries:
+            if total <= self._max_total_results:
+                break
+            del tracker.queries[key]
+            total -= size
 
     def _prune_by_max_results(self, tracker: _TrackerCache) -> None:
         """Drop the oldest queries until the indexer fits its quota."""

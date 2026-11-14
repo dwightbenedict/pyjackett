@@ -27,8 +27,21 @@ def _custom_category_number(tracker_category: str) -> int:
     return int.from_bytes(digest[:2], "little")
 
 
+def _parents_by_category_id() -> dict[int, TorznabCategory]:
+    """Each standard category id with the first parent that contains it."""
+    parents: dict[int, TorznabCategory] = {}
+    for parent in PARENT_CATEGORIES:
+        for category in (parent, *parent.subcategories):
+            parents.setdefault(category.id, parent)
+    return parents
+
+
+_PARENT_OF = _parents_by_category_id()
+_PARENT_IDS = frozenset(parent.id for parent in PARENT_CATEGORIES)
+
+
 def _find_parent(category: TorznabCategory) -> TorznabCategory | None:
-    return next((p for p in PARENT_CATEGORIES if p.contains(category)), None)
+    return _PARENT_OF.get(category.id)
 
 
 class CategoryMappings:
@@ -37,6 +50,9 @@ class CategoryMappings:
     def __init__(self) -> None:
         self._mappings: list[CategoryMapping] = []
         self._tree: list[TorznabCategory] = []
+        # lookups over the tree, which gets a mapping per tracker category
+        self._nodes: dict[int, TorznabCategory] = {}
+        self._child_ids: dict[int, set[int]] = {}
 
     # ---- building ------------------------------------------------------
 
@@ -70,7 +86,7 @@ class CategoryMappings:
         self._add_to_tree(custom)
 
     def _add_to_tree(self, category: TorznabCategory) -> None:
-        if category in PARENT_CATEGORIES:
+        if category.id in _PARENT_IDS:
             self._add_parent(category)
             return
         parent = _find_parent(category)
@@ -80,18 +96,24 @@ class CategoryMappings:
         self._add_child(parent, category)
 
     def _add_parent(self, category: TorznabCategory) -> None:
-        if category not in self._tree:
-            self._tree.append(category.copy_without_subcategories())
+        if category.id not in self._nodes:
+            self._add_node(category)
 
     def _add_child(
         self, parent: TorznabCategory, child: TorznabCategory
     ) -> None:
-        node = next((c for c in self._tree if c == parent), None)
-        if node is None:
-            node = parent.copy_without_subcategories()
-            self._tree.append(node)
-        if not node.contains(child):
+        node = self._nodes.get(parent.id) or self._add_node(parent)
+        children = self._child_ids[node.id]
+        if child.id != node.id and child.id not in children:
+            children.add(child.id)
             node.subcategories.append(child)
+
+    def _add_node(self, parent: TorznabCategory) -> TorznabCategory:
+        node = parent.copy_without_subcategories()
+        self._tree.append(node)
+        self._nodes[node.id] = node
+        self._child_ids[node.id] = set()
+        return node
 
     def merge(self, other: CategoryMappings) -> None:
         """Add the standard categories of ``other`` (custom ones excluded)."""

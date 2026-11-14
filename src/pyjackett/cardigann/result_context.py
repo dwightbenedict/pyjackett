@@ -19,3 +19,8 @@ class ResultContext:
     caps: TorznabCapabilities
     indexer_id: str
     filter_context: FilterContext
+    max_rows: int | None = None  # stop after this many releases
+
+    def is_full(self, releases: list) -> bool:
+        """True once a capped parser has all the releases it may keep."""
+        return self.max_rows is not None and len(releases) >= self.max_rows

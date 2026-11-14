@@ -5,12 +5,11 @@ from __future__ import annotations
 import logging
 from collections.abc import Awaitable, Callable
 
-from bs4 import BeautifulSoup
-
 from pyjackett.cardigann import html_dom
 from pyjackett.cardigann.definition import ErrorBlock, LoginBlock
 from pyjackett.cardigann.headers import parse_custom_headers
 from pyjackett.cardigann.host import CardigannHost
+from pyjackett.cardigann.html_dom import Document
 from pyjackett.cardigann.html_selectors import handle_selector
 from pyjackett.cardigann.login_captcha import (
     add_captcha_items,
@@ -46,7 +45,7 @@ class CardigannLogin:
     def __init__(self, host: CardigannHost) -> None:
         self._host = host
         self._landing_result: WebResult | None = None
-        self._landing_document: BeautifulSoup | None = None
+        self._landing_document: Document | None = None
         self._strategies: dict[LoginMethod, LoginStrategy] = {
             LoginMethod.POST: self._post_strategy,
             LoginMethod.FORM: self._login_form,
@@ -272,7 +271,9 @@ class CardigannLogin:
             context,
             "get selector input",
         )
-        action = login.submitpath or form.get("action") or ""
+        action = (
+            login.submitpath or html_dom.attribute_value(form, "action") or ""
+        )
         if query:
             action += "?" + build_query_string(query.items())
         return self._host.resolve_path(action, login_url)
@@ -281,7 +282,7 @@ class CardigannLogin:
         self, form, fields, submit_url, login_url, headers
     ) -> WebResult:
         host = self._host
-        if form.get("enctype") == "multipart/form-data":
+        if html_dom.attribute_value(form, "enctype") == "multipart/form-data":
             body, content_type = build_multipart(fields)
             headers = {**headers, "Content-Type": content_type}
             request = WebRequest(

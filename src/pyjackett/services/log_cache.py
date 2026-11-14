@@ -10,8 +10,13 @@ from datetime import datetime
 from pyjackett.utils.log_cleansing import cleanse
 
 MAX_LOG_ENTRIES = 200
-LOG_FORMAT = "%(name)s: %(message)s"
+LOG_FORMAT = "%(message)s"
 LOGGER_NAME = "pyjackett"
+
+
+def source_name(logger_name: str) -> str:
+    """The logger name without the package prefix, e.g. ``indexers.base``."""
+    return logger_name.removeprefix(f"{LOGGER_NAME}.")
 
 
 class LogCache(logging.Handler):
@@ -31,6 +36,7 @@ class LogCache(logging.Handler):
     def emit(self, record: logging.LogRecord) -> None:
         entry = {
             "Level": record.levelname.title(),
+            "Source": source_name(record.name),
             "Message": cleanse(self.format(record)),
             "When": datetime.fromtimestamp(record.created).isoformat(),
         }
@@ -42,6 +48,10 @@ class LogCache(logging.Handler):
         """Newest entry first."""
         with self._entries_lock:
             return list(self._entries)
+
+    def clear(self) -> None:
+        with self._entries_lock:
+            self._entries.clear()
 
     def attach(self) -> None:
         """Start collecting records of the application logger (idempotent)."""

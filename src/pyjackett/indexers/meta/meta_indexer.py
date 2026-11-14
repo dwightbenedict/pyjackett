@@ -29,6 +29,7 @@ class BaseMetaIndexer(BaseIndexer):
 
     default_site_link = LOCAL_SITE_LINK
     caches_results = False
+    limits_concurrency = False  # its members take the slots
 
     def __init__(
         self,
@@ -108,8 +109,20 @@ class BaseMetaIndexer(BaseIndexer):
         releases.sort(key=lambda release: release.gain, reverse=True)
         return releases[: query.limit] if query.limit > 0 else releases
 
-    async def _query_members(self, query: TorznabQuery):
+    def _searchable_members(self) -> list[BaseIndexer]:
+        """Members worth asking: failing ones wait out their back-off."""
         members = self.valid_indexers
+        if not self._deps.skip_failing:
+            return members
+        working = [m for m in members if not m.is_failing]
+        if len(working) < len(members):
+            logger.info(
+                "Skipping %d failing indexers", len(members) - len(working)
+            )
+        return working
+
+    async def _query_members(self, query: TorznabQuery):
+        members = self._searchable_members()
         searches = [
             m.results_for_query(query, True)
             for m in members
@@ -125,7 +138,11 @@ class BaseMetaIndexer(BaseIndexer):
         return await self._gather_within_timeout(searches)
 
     async def _gather_within_timeout(self, searches) -> list[IndexerResult]:
-        """Results of the searches that finished before the deadline."""
+        """Results of the searches that finished before the deadline.
+
+        Searches still waiting for a slot at the deadline are dropped, so
+        a loaded server answers with partial results instead of piling up.
+        """
         tasks = [asyncio.ensure_future(search) for search in searches]
         if not tasks:
             return []

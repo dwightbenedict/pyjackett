@@ -227,9 +227,16 @@ def apply_template(
     """
     if is_blank(template) or "{{" not in template:
         return template
-    template = _expand_re_replace(template, variables, modifier)
-    template = _expand_join(template, variables, modifier)
-    template = _expand_logic_functions(template, variables)
-    template = _expand_if_else(template, variables)
-    template = _expand_range(template, variables, modifier)
+    # most templates are plain variables: a pass whose keyword is absent
+    # cannot match, so skip its regex scan (done for every field of a row)
+    if "re_replace" in template:
+        template = _expand_re_replace(template, variables, modifier)
+    if "join" in template:
+        template = _expand_join(template, variables, modifier)
+    if any(name in template for name in _LOGIC_FUNCTIONS):
+        template = _expand_logic_functions(template, variables)
+    if "if" in template:
+        template = _expand_if_else(template, variables)
+    if "range" in template:
+        template = _expand_range(template, variables, modifier)
     return _expand_variables(template, variables, modifier)

@@ -4,11 +4,10 @@ from __future__ import annotations
 
 import json
 
-from bs4 import Tag
-
 from pyjackett.cardigann import html_dom
 from pyjackett.cardigann.definition import CaptchaBlock
 from pyjackett.cardigann.host import CardigannHost
+from pyjackett.cardigann.html_dom import Element
 from pyjackett.config.items import (
     DisplayImageItem,
     DisplayInfoItem,
@@ -23,7 +22,7 @@ ANSWER_KEYS = {"image": "CaptchaText", "text": "CaptchaAnswer"}
 async def add_captcha_items(
     host: CardigannHost,
     captcha: CaptchaBlock,
-    page: Tag,
+    page: Element,
     login_url: str,
     cookies: str | None,
     headers: dict[str, str],
@@ -45,12 +44,14 @@ async def add_captcha_items(
 
 async def _add_image_item(
     host: CardigannHost,
-    element: Tag,
+    element: Element,
     login_url: str,
     cookies: str | None,
     headers: dict[str, str],
 ) -> None:
-    image_url = host.resolve_path(element.get("src"), login_url)
+    image_url = host.resolve_path(
+        html_dom.attribute_value(element, "src"), login_url
+    )
     response = await host.requester.request(
         image_url, cookies, referer=login_url, headers=headers
     )
@@ -61,7 +62,7 @@ async def _add_image_item(
     host.config_data.add_dynamic("CaptchaText", StringItem("Captcha Text"))
 
 
-def _add_text_item(host: CardigannHost, element: Tag) -> None:
+def _add_text_item(host: CardigannHost, element: Element) -> None:
     challenge = html_dom.text_content(element)
     host.config_data.add_dynamic(
         "CaptchaChallenge", DisplayInfoItem("Captcha Challenge", challenge)
@@ -70,7 +71,10 @@ def _add_text_item(host: CardigannHost, element: Tag) -> None:
 
 
 def _answer_field_name(
-    host: CardigannHost, captcha: CaptchaBlock, page: Tag, use_selectors: bool
+    host: CardigannHost,
+    captcha: CaptchaBlock,
+    page: Element,
+    use_selectors: bool,
 ) -> str:
     if not use_selectors:
         return captcha.input
@@ -80,11 +84,14 @@ def _answer_field_name(
             f"Login failed: No captcha input found using {captcha.input}",
             host.config_data,
         )
-    return element.get("name")
+    return html_dom.attribute_value(element, "name")
 
 
 def captcha_answer_fields(
-    host: CardigannHost, captcha: CaptchaBlock, page: Tag, use_selectors: bool
+    host: CardigannHost,
+    captcha: CaptchaBlock,
+    page: Element,
+    use_selectors: bool,
 ) -> dict[str, str]:
     """Form fields carrying the answer the user typed (if any)."""
     answer_key = ANSWER_KEYS.get(captcha.type)
@@ -96,10 +103,11 @@ def captcha_answer_fields(
 
 
 async def simple_captcha_fields(
-    host: CardigannHost, page: Tag, login_url: str, headers: dict[str, str]
+    host: CardigannHost, page: Element, login_url: str, headers: dict[str, str]
 ) -> dict[str, str]:
     """Solve "simpleCaptcha" pages automatically (no user input)."""
-    if page.select_one('script[src*="simpleCaptcha"]') is None:
+    script = html_dom.query_selector(page, 'script[src*="simpleCaptcha"]')
+    if script is None:
         return {}
     captcha_url = host.resolve_path("simpleCaptcha.php?numImages=1")
     response = await host.requester.request(

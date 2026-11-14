@@ -11,6 +11,7 @@ DATA_DIR_ENV = "PYJACKETT_DATA"
 APP_DIR_NAME = "PyJackett"
 SERVER_CONFIG_FILE = "ServerConfig.json"
 PROTECTION_KEY_FILE = "protection.key"
+DEFINITION_CACHE_FILE = "DefinitionCache.bin"
 INDEXERS_DIR_NAME = "Indexers"
 BUNDLED_DEFINITIONS_DIR = Path(__file__).resolve().parent.parent / (
     "definitions"

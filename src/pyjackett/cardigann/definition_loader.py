@@ -7,6 +7,7 @@ string until a typed field converts it, like the YamlDotNet based original.
 from __future__ import annotations
 
 import dataclasses
+import functools
 import types
 import typing
 from typing import Any
@@ -112,12 +113,24 @@ def _convert(hint: Any, value: Any) -> Any:
     return _convert_scalar(hint, value)
 
 
+@functools.cache
+def _hints_of(cls: type) -> dict[str, Any]:
+    """Resolved field types of ``cls`` (resolving them is slow)."""
+    return typing.get_type_hints(cls)
+
+
+@functools.cache
+def _attributes_by_key(cls: type) -> dict[str, str]:
+    """Maps each YAML key of ``cls`` to its attribute name."""
+    return {_to_yaml_key(f.name): f.name for f in dataclasses.fields(cls)}
+
+
 def _build(cls: type, data: Any) -> Any:
     """Instantiate dataclass ``cls`` from a parsed YAML mapping."""
     if not isinstance(data, dict):
         raise ValueError(f"Expected a mapping for {cls.__name__}")
-    hints = typing.get_type_hints(cls)
-    by_key = {_to_yaml_key(f.name): f.name for f in dataclasses.fields(cls)}
+    hints = _hints_of(cls)
+    by_key = _attributes_by_key(cls)
     values = {}
     for key, raw in data.items():
         if key not in by_key:

@@ -1,4 +1,4 @@
-"""Turns a :class:`WebRequest` into keyword arguments for httpx."""
+"""Turns a :class:`WebRequest` into keyword arguments for curl_cffi."""
 
 from __future__ import annotations
 
@@ -62,12 +62,23 @@ def _body(request: WebRequest, headers: dict[str, str]) -> bytes | None:
 
 
 def build_request_kwargs(
-    request: WebRequest, user_agent: str | None = None
+    request: WebRequest,
+    user_agent: str | None = None,
+    impersonating: bool = False,
 ) -> dict[str, Any]:
-    """Return ``method``, ``url``, ``headers`` and ``content`` for httpx."""
-    headers = _default_headers(request)
+    """Return ``method``, ``url``, ``headers`` and ``content`` (curl_cffi).
+
+    When ``impersonating``, browser requests keep only the headers the
+    indexer or a Cloudflare clearance asked for; curl_cffi sends the
+    User-Agent and Accept headers that match its TLS fingerprint.
+    """
+    client_sets_headers = impersonating and bool(request.emulate_browser)
+    if client_sets_headers:
+        headers = dict(request.headers)
+    else:
+        headers = _default_headers(request)
     lowered = {name.lower() for name in headers}
-    if "user-agent" not in lowered:
+    if "user-agent" not in lowered and (user_agent or not client_sets_headers):
         headers["User-Agent"] = user_agent or _user_agent(
             bool(request.emulate_browser)
         )

@@ -22,6 +22,10 @@ def generate_random(length: int) -> str:
     return "".join(secrets.choice(_RANDOM_ALPHABET) for _ in range(length))
 
 
+def generate_api_key() -> str:
+    return generate_random(_API_KEY_LENGTH)
+
+
 class ServerConfigStore:
     """Persists the server configuration inside the data directory."""
 
@@ -55,7 +59,7 @@ class ServerConfigStore:
     def _ensure_identifiers(config: ServerConfig) -> bool:
         changed = False
         if not (config.api_key or "").strip():
-            config.api_key = generate_random(_API_KEY_LENGTH)
+            config.api_key = generate_api_key()
             changed = True
         if not (config.instance_id or "").strip():
             config.instance_id = generate_random(_INSTANCE_ID_LENGTH)

@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
+import ssl
 import threading
+from collections.abc import Awaitable, Callable
 
 
 class TrustedCertificates:
@@ -25,3 +28,23 @@ class TrustedCertificates:
     def is_trusted(self, host: str, certificate_der: bytes) -> bool:
         fingerprint = hashlib.sha1(certificate_der).hexdigest().upper()
         return host.lower() in self._hosts_by_hash.get(fingerprint, set())
+
+
+CertificateProbe = Callable[[str, int, float], Awaitable[bytes | None]]
+
+
+async def fetch_peer_certificate(
+    host: str, port: int, timeout: float
+) -> bytes | None:
+    """The DER certificate ``host`` presents, without validating it."""
+    context = ssl.create_default_context()
+    context.check_hostname = False
+    context.verify_mode = ssl.CERT_NONE
+    connect = asyncio.open_connection(host, port, ssl=context)
+    _, writer = await asyncio.wait_for(connect, timeout)
+    try:
+        ssl_object = writer.get_extra_info("ssl_object")
+        return ssl_object.getpeercert(binary_form=True)
+    finally:
+        writer.close()
+        await writer.wait_closed()

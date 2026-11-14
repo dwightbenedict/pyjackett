@@ -102,6 +102,8 @@ def parse_json_results(
         raise NoRowsError("Error Parsing Rows Selector. There are 0 rows.")
     releases = []
     for row in rows:
+        if context.is_full(releases):
+            break
         for item in _row_objects(row, context):
             release = _parse_object(
                 row, item, context, variables, query, search_url

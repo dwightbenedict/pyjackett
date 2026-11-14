@@ -44,8 +44,10 @@ class CardigannSearch:
         login: CardigannLogin,
         caps: TorznabCapabilities,
         default_categories: list[str],
+        max_rows: int | None = None,
     ) -> None:
         self._host = host
+        self._max_rows = max_rows
         self._login = login
         self._caps = caps
         self._default_categories = default_categories
@@ -144,6 +146,7 @@ class CardigannSearch:
             self._caps,
             self._host.id,
             self._host.filter_context(variables),
+            self._max_rows,
         )
 
     # ---- JSON ---------------------------------------------------------------

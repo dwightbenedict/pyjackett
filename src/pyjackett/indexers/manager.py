@@ -6,13 +6,20 @@ the meta factory builds "all" and the filter groups.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from collections.abc import Iterable
 
+from pyjackett.config.server_config import ServerConfig
+from pyjackett.core.exceptions import (
+    IndexerConfigurationRequiredError,
+    IndexerTestTimeoutError,
+)
 from pyjackett.indexers.base import BaseIndexer
 from pyjackett.indexers.configuration import IndexerConfigurationService
 from pyjackett.indexers.dependencies import IndexerDependencies
 from pyjackett.indexers.meta.factory import MetaIndexerFactory
+from pyjackett.indexers.provisioning import PublicIndexerProvisioner
 from pyjackett.indexers.registry import IndexerRegistry
 from pyjackett.indexers.sources import IndexerSource
 
@@ -33,12 +40,16 @@ class IndexerManager:
         sources: Iterable[IndexerSource],
         registry: IndexerRegistry,
         meta_factory: MetaIndexerFactory,
+        provisioner: PublicIndexerProvisioner,
+        config: ServerConfig,
     ) -> None:
+        self._config = config
         self._deps = dependencies
         self._config_service = config_service
         self._sources = list(sources)
         self._registry = registry
         self._meta = meta_factory
+        self._provisioner = provisioner
 
     # ---- startup ----------------------------------------------------------
 
@@ -48,6 +59,7 @@ class IndexerManager:
         logger.info("Loaded %d indexers in total", len(self._registry))
         self._migrate_renamed_indexers()
         self._load_configurations()
+        self._provisioner.provision(self._registry.values())
         self.init_meta_indexers()
         self._remove_legacy_configurations()
 
@@ -79,6 +91,36 @@ class IndexerManager:
         """(Re)build the "all" indexer and the predefined filter groups."""
         self._meta.rebuild()
 
+    async def reload_definitions(self) -> int:
+        """Add new and swap changed indexers without a restart.
+
+        Returns how many changed. Indexers whose definition disappeared stay
+        until the next restart.
+        """
+        fresh = await asyncio.to_thread(self._load_all)
+        changed = [i for i in fresh if self._apply_definition(i)]
+        if changed:
+            self._migrate_renamed_indexers()
+            self._provisioner.provision(changed)
+            self.init_meta_indexers()
+        logger.info("Reloaded definitions: %d changed", len(changed))
+        return len(changed)
+
+    def _load_all(self) -> list[BaseIndexer]:
+        return [i for source in self._sources for i in source.load(self._deps)]
+
+    def _apply_definition(self, indexer: BaseIndexer) -> bool:
+        current = self._registry.find(indexer.id)
+        if current is None:
+            self._register(indexer)
+        elif current.same_definition_as(indexer):
+            return False
+        else:
+            self._registry.replace(indexer)
+            indexer.subscribe_config_changes(self._config_service.save)
+        self._config_service.load(indexer)
+        return True
+
     # ---- lookup -------------------------------------------------------------
 
     def get_indexer(self, name: str) -> BaseIndexer:
@@ -98,8 +140,38 @@ class IndexerManager:
     # ---- operations ---------------------------------------------------------
 
     async def test_indexer(self, name: str) -> None:
-        """Run a blank search; fails when the tracker returns nothing."""
-        await self.get_indexer(name).verify()
+        """Run a blank search; fails when the tracker returns nothing.
+
+        A tracker that does not answer within the test timeout fails too.
+        """
+        indexer = self.get_indexer(name)
+        seconds = self._config.test_timeout
+        limit = asyncio.timeout(seconds)
+        try:
+            async with limit:
+                await indexer.verify()
+        except TimeoutError:
+            if not limit.expired():
+                raise
+            raise IndexerTestTimeoutError(
+                f"No answer within {seconds:g} seconds"
+            ) from None
+
+    def add_indexer(self, name: str) -> BaseIndexer:
+        """Configure a public indexer with its defaults (idempotent).
+
+        Indexers that need credentials must be configured with their form.
+        """
+        found = self._registry.find(self._registry.resolve(name))
+        if found is None:
+            raise UnknownIndexerError(f"Unknown indexer: {name}")
+        if not found.is_configured and not self._provisioner.provision_one(
+            found
+        ):
+            raise IndexerConfigurationRequiredError(
+                f"{found.name} needs credentials: configure it with its form"
+            )
+        return found
 
     def delete_indexer(self, name: str) -> None:
         indexer = self.get_indexer(name)

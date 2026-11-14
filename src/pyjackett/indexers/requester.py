@@ -121,7 +121,14 @@ class WebRequester:
         self, request: WebRequest, cookie_override: str | None = None
     ) -> WebResult:
         request.encoding = self._owner.encoding
+        logger.debug("%s %s %s", self._owner.name, request.type, request.url)
         result = await self._client.get_result(request)
+        logger.debug(
+            "%s response %s from %s",
+            self._owner.name,
+            result.status,
+            request.url,
+        )
         check_site_down(result)
         self.update_cookie_header(result.cookies, cookie_override)
         return result

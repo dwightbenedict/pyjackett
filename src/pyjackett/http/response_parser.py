@@ -1,11 +1,11 @@
-"""Turns an httpx response into a :class:`WebResult`."""
+"""Turns an curl_cffi response into a :class:`WebResult`."""
 
 from __future__ import annotations
 
 import re
 from urllib.parse import urljoin
 
-import httpx
+from curl_cffi.requests import Response
 
 from pyjackett.http.models import WebRequest, WebResult
 from pyjackett.utils.cookies import set_cookie_to_pair
@@ -13,7 +13,7 @@ from pyjackett.utils.cookies import set_cookie_to_pair
 _REFRESH_URL = re.compile(r"^(.*?url)=(.*?)(?:;|$)", re.IGNORECASE)
 
 
-def _collect_headers(response: httpx.Response) -> dict[str, list[str]]:
+def _collect_headers(response: Response) -> dict[str, list[str]]:
     headers: dict[str, list[str]] = {}
     for name, value in response.headers.multi_items():
         headers.setdefault(name.lower(), []).append(value)
@@ -46,7 +46,7 @@ def _redirect_target(headers: dict[str, list[str]]) -> str | None:
     return location or _refresh_target(refresh)
 
 
-def build_web_result(response: httpx.Response, request: WebRequest):
+def build_web_result(response: Response, request: WebRequest):
     """Convert ``response``; relative redirects become absolute."""
     headers = _collect_headers(response)
     target = _redirect_target(headers)

@@ -29,6 +29,10 @@ class IndexerRegistry:
         self._indexers[indexer.id] = indexer
         return True
 
+    def replace(self, indexer: BaseIndexer) -> None:
+        """Swap in ``indexer`` for the one that has its id."""
+        self._indexers[indexer.id] = indexer
+
     def build_aliases(self) -> ItemsView[str, str]:
         """(Re)learn which old id belongs to which indexer; returns them."""
         aliases: dict[str, str] = {}

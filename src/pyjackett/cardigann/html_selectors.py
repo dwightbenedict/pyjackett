@@ -2,11 +2,10 @@
 
 from __future__ import annotations
 
-from bs4 import Tag
-
 from pyjackett.cardigann import html_dom
 from pyjackett.cardigann.definition import SelectorBlock
 from pyjackett.cardigann.filters import FilterContext, apply_filters
+from pyjackett.cardigann.html_dom import Element
 from pyjackett.cardigann.template import Variables, apply_template
 from pyjackett.utils.text import normalize_space
 
@@ -16,8 +15,8 @@ class SelectorError(Exception):
 
 
 def _select_target(
-    block: SelectorBlock, dom: Tag, variables: Variables, required: bool
-) -> Tag | None:
+    block: SelectorBlock, dom: Element, variables: Variables, required: bool
+) -> Element | None:
     """The element a block refers to (``dom`` itself without a selector)."""
     if block.selector is None:
         return dom
@@ -32,7 +31,7 @@ def _select_target(
     return selection
 
 
-def _remove_descendants(block: SelectorBlock, selection: Tag) -> None:
+def _remove_descendants(block: SelectorBlock, selection: Element) -> None:
     if block.remove is None:
         return
     for element in html_dom.query_selector_all(selection, block.remove):
@@ -41,7 +40,7 @@ def _remove_descendants(block: SelectorBlock, selection: Tag) -> None:
 
 def _case_value(
     block: SelectorBlock,
-    selection: Tag,
+    selection: Element,
     variables: Variables,
     required: bool,
 ) -> str | None:
@@ -60,7 +59,7 @@ def _case_value(
 
 
 def _attribute_value(
-    block: SelectorBlock, selection: Tag, required: bool
+    block: SelectorBlock, selection: Element, required: bool
 ) -> str | None:
     value = html_dom.attribute_value(selection, block.attribute)
     if value is None and required:
@@ -73,7 +72,7 @@ def _attribute_value(
 
 def _raw_value(
     block: SelectorBlock,
-    selection: Tag,
+    selection: Element,
     variables: Variables,
     required: bool,
 ) -> str | None:
@@ -86,7 +85,7 @@ def _raw_value(
 
 def handle_selector(
     block: SelectorBlock,
-    dom: Tag,
+    dom: Element,
     variables: Variables,
     context: FilterContext,
     required: bool = True,

@@ -5,9 +5,9 @@ from __future__ import annotations
 import logging
 from datetime import datetime, timedelta
 
-import httpx
 import pytest
 
+import fakes
 from pyjackett.config.server_config import ServerConfig
 from pyjackett.http.client import WebClient
 from pyjackett.http.models import WebRequest, WebResult
@@ -70,8 +70,8 @@ async def test_retry_backs_off_on_the_injected_clock():
 
 async def test_web_client_throttles_with_the_injected_clock():
     clock = FakeClock()
-    transport = httpx.MockTransport(lambda request: httpx.Response(200))
-    session = HttpSession(ServerConfig(), transport=transport)
+    client_factory = fakes.mock_network(lambda request: fakes.Response(200))
+    session = HttpSession(ServerConfig(), client_factory=client_factory)
     client = WebClient(session, clock, request_delay=5.0)
     request = WebRequest(url="http://tracker.test/")
     await client.get_result(request)
@@ -135,6 +135,17 @@ def test_log_cache_attaches_once_and_detaches():
     assert handler not in logger.handlers
 
 
+def test_log_cache_clear_drops_collected_entries():
+    logger = logging.getLogger("pyjackett.test-clear")
+    handler = LogCache(logger=logger)
+    handler.attach()
+    logger.warning("something happened")
+    assert len(handler.logs) == 1
+    handler.clear()
+    assert handler.logs == []
+    handler.detach()
+
+
 def test_context_takes_the_environment_and_clock_from_its_caller(tmp_path):
     from pyjackett.app_context import build_context
 
@@ -175,3 +186,75 @@ async def test_indexer_verify_raises_a_domain_error(found):
     else:
         with pytest.raises(IndexerTestFailedError):
             await indexer.verify()
+
+
+def test_log_cache_entries_carry_a_short_source_and_plain_message():
+    logger = logging.getLogger("pyjackett.indexers.demo")
+    handler = LogCache(logger=logging.getLogger("pyjackett"))
+    handler.attach()
+    logger.warning("hello %s", "world")
+    entry = handler.logs[0]
+    handler.detach()
+    assert entry["Source"] == "indexers.demo"
+    assert entry["Message"] == "hello world"
+    assert entry["Level"] == "Warning"
+
+
+def test_impersonation_defaults_to_chrome_and_can_be_switched_off():
+    from pyjackett.http.session import impersonation_from
+
+    assert impersonation_from({}) == "chrome"
+    assert impersonation_from({"PYJACKETT_IMPERSONATE": "safari"}) == "safari"
+    assert impersonation_from({"PYJACKETT_IMPERSONATE": "none"}) is None
+    assert impersonation_from({"PYJACKETT_IMPERSONATE": " "}) is None
+
+
+async def test_session_opens_its_connection_with_the_impersonation():
+    opened = []
+
+    def factory(**options):
+        opened.append(options)
+        return fakes.mock_network(lambda request: fakes.Response(200))(
+            **options
+        )
+
+    session = HttpSession(
+        ServerConfig(), client_factory=factory, impersonate="chrome"
+    )
+    await session.send({"method": "GET", "url": "http://tracker.test/"})
+    assert opened[0]["impersonate"] == "chrome"
+    await session.aclose()
+
+
+def test_impersonated_browser_requests_leave_headers_to_the_client():
+    from pyjackett.http.request_builder import build_request_kwargs
+
+    request = WebRequest(url="http://tracker.test/", emulate_browser=True)
+    headers = build_request_kwargs(request, impersonating=True)["headers"]
+    assert headers == {}
+
+
+def test_impersonated_requests_keep_site_and_clearance_headers():
+    from pyjackett.http.request_builder import build_request_kwargs
+
+    request = WebRequest(
+        url="http://tracker.test/",
+        emulate_browser=True,
+        headers={"Accept": "application/json"},
+    )
+    kwargs = build_request_kwargs(request, impersonating=True)
+    assert kwargs["headers"] == {"Accept": "application/json"}
+    cleared = build_request_kwargs(request, "Solved/1.0", impersonating=True)
+    assert cleared["headers"]["User-Agent"] == "Solved/1.0"
+
+
+def test_api_requests_and_unimpersonated_sessions_keep_the_defaults():
+    from pyjackett.http.request_builder import build_request_kwargs
+
+    api = WebRequest(url="http://tracker.test/", emulate_browser=False)
+    api_headers = build_request_kwargs(api, impersonating=True)["headers"]
+    assert api_headers["User-Agent"].startswith("PyJackett/")
+    browser = WebRequest(url="http://tracker.test/", emulate_browser=True)
+    plain = build_request_kwargs(browser, impersonating=False)["headers"]
+    assert "Chrome" in plain["User-Agent"]
+    assert plain["Accept"] == "*/*"

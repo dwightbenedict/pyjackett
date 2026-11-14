@@ -1,35 +1,53 @@
-"""HTML/XML parsing and CSS selection helpers (BeautifulSoup + soupsieve).
+"""HTML/XML parsing and CSS selection helpers (selectolax + lexbor).
 
-html5lib is used for HTML because it implements the HTML5 parsing rules
-(implicit ``<tbody>``, ...) the selectors in the definitions rely on.
+Lexbor implements the HTML5 parsing rules (implicit ``<tbody>``, ...) the
+selectors in the definitions rely on. It has no XML mode, so XML documents
+are rewritten into markup it keeps intact: empty-element tags are expanded,
+namespace prefixes are dropped (``<tv:raw_title>`` becomes ``<raw_title>``, as
+definitions select by local name) and the names of HTML void elements
+(``<link>``) are given a prefix, both in the markup and in the selectors used
+on such documents.
 """
 
 from __future__ import annotations
 
 import functools
-import warnings
+import re
 
-import soupsieve
-from bs4 import BeautifulSoup, Tag
-from bs4.builder import XMLParsedAsHTMLWarning
+from selectolax.lexbor import LexborHTMLParser, LexborNode
 
-warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)
+Document = LexborHTMLParser
+Element = LexborNode
 
 _ROOT_PREFIX = ":root"
 _CONTAINS = ":contains("
+_XML_WRAPPER = "pjxml"
+_XML_PREFIX = "xml-"
+_VOID_ELEMENTS = (
+    "area|base|br|col|embed|hr|img|input|link|meta|param|source|track|wbr"
+)
+_EMPTY_TAG = re.compile(r"<([\w:.-]+)((?:\s[^<>]*?)?)\s*/>")
+_NAMESPACE_PREFIX = re.compile(r"<(/?)[\w.-]+:(?=[\w.-])")
+_VOID_TAG = re.compile(rf"<(/?)({_VOID_ELEMENTS})(?=[\s/>])", re.IGNORECASE)
+_VOID_SELECTOR = re.compile(
+    rf"(?<![\w#.\[=\"'-])({_VOID_ELEMENTS})(?![\w-])", re.IGNORECASE
+)
 
 
-def parse_html(markup: str) -> BeautifulSoup:
-    return BeautifulSoup(markup, "html5lib", multi_valued_attributes=None)
+def parse_html(markup: str) -> Document:
+    return LexborHTMLParser(markup)
 
 
-def parse_xml(markup: str) -> BeautifulSoup:
-    return BeautifulSoup(markup, "xml", multi_valued_attributes=None)
+def parse_xml(markup: str) -> Document:
+    expanded = _EMPTY_TAG.sub(r"<\1\2></\1>", markup)
+    local_names = _NAMESPACE_PREFIX.sub(r"<\1", expanded)
+    prefixed = _VOID_TAG.sub(rf"<\1{_XML_PREFIX}\2", local_names)
+    return LexborHTMLParser(f"<{_XML_WRAPPER}>{prefixed}</{_XML_WRAPPER}>")
 
 
-def root_element(document: BeautifulSoup) -> Tag | None:
+def root_element(document: Document) -> Element | None:
     """The first element of the document (``<html>``, ``<rss>``, ...)."""
-    return document.find(True)
+    return document.root
 
 
 # ---- selector dialect -------------------------------------------------------
@@ -61,8 +79,10 @@ def _quote_argument(argument: str) -> str:
 
 
 @functools.lru_cache(maxsize=2048)
-def translate_selector(selector: str) -> str:
-    """Rewrite ``:contains(text)`` into soupsieve's quoted form."""
+def translate_selector(selector: str, xml: bool = False) -> str:
+    """Rewrite ``:contains(text)`` into lexbor's case-insensitive form."""
+    if xml:
+        selector = _VOID_SELECTOR.sub(rf"{_XML_PREFIX}\1", selector)
     parts, position = [], 0
     while True:
         found = selector.find(_CONTAINS, position)
@@ -71,52 +91,103 @@ def translate_selector(selector: str) -> str:
             return "".join(parts)
         parts.append(selector[position:found])
         argument, position = _read_argument(selector, found + len(_CONTAINS))
-        parts.append(f":-soup-contains({_quote_argument(argument)})")
-
-
-def _compile(selector: str) -> soupsieve.SoupSieve:
-    return soupsieve.compile(translate_selector(selector))
+        parts.append(f":lexbor-contains({_quote_argument(argument)} i)")
 
 
 # ---- querying ---------------------------------------------------------------
 
 
-def _resolve_root(element: Tag, selector: str) -> tuple[Tag, str]:
-    """``:root`` is not supported by every engine; climb to the root."""
-    if not selector.startswith(_ROOT_PREFIX):
-        return element, selector
-    while element.parent is not None and isinstance(element.parent, Tag):
+def _top(element: Element) -> Element:
+    while element.parent is not None:
         element = element.parent
-    return element, selector[len(_ROOT_PREFIX) :]
+    return element
 
 
-def query_selector(element: Tag, selector: str) -> Tag | None:
-    element, selector = _resolve_root(element, selector)
-    return _compile(selector).select_one(element)
+def _is_xml(scope: Document | Element) -> bool:
+    if isinstance(scope, LexborHTMLParser):
+        return scope.css_first(_XML_WRAPPER) is not None
+    node = scope
+    while node is not None:
+        if node.tag == _XML_WRAPPER:
+            return True
+        node = node.parent
+    return False
 
 
-def query_selector_all(element: Tag | BeautifulSoup, selector: str):
-    return _compile(selector).select(element)
+def _prepare(scope: Document | Element, selector: str):
+    """``:root`` is relative to the whole document, not to ``scope``."""
+    translated = translate_selector(selector, _is_xml(scope))
+    if translated.startswith(_ROOT_PREFIX) and isinstance(scope, Element):
+        scope = _top(scope)
+    return scope, translated
 
 
-def matches(element: Tag, selector: str) -> bool:
-    return _compile(selector).match(element)
+def query_selector(element: Element, selector: str) -> Element | None:
+    scope, translated = _prepare(element, selector)
+    return scope.css_first(translated)
+
+
+def query_selector_all(
+    element: Document | Element, selector: str
+) -> list[Element]:
+    scope, translated = _prepare(element, selector)
+    return scope.css(translated)
+
+
+def matches(element: Element, selector: str) -> bool:
+    """True if ``element`` itself matches (not just one of its children)."""
+    translated = translate_selector(selector, _is_xml(element))
+    scope = element.parent
+    if scope is None:
+        return element.css_matches(translated)
+    return any(
+        found.mem_id == element.mem_id for found in scope.css(translated)
+    )
 
 
 # ---- reading ----------------------------------------------------------------
 
 
-def text_content(element: Tag) -> str:
-    return element.get_text()
+def text_content(element: Element) -> str:
+    return element.text()
 
 
-def attribute_value(element: Tag, name: str) -> str | None:
-    value = element.get(name)
-    if isinstance(value, list):  # multi-valued attributes, if ever enabled
-        return " ".join(value)
-    return value
+def attribute_value(element: Element, name: str) -> str | None:
+    """Value of ``name``; None if absent, empty for valueless attributes."""
+    attributes = element.attributes
+    if name not in attributes:
+        return None
+    return attributes[name] or ""
 
 
-def to_html(element: Tag | None) -> str:
+def has_attribute(element: Element, name: str) -> bool:
+    return name in element.attributes
+
+
+def to_html(element: Element | None) -> str:
     """Markup of ``element`` for log and error messages."""
-    return "<NULL>" if element is None else element.prettify()
+    return "<NULL>" if element is None else element.html
+
+
+# ---- navigating and editing -------------------------------------------------
+
+
+def previous_element(element: Element) -> Element | None:
+    """The closest previous sibling that is an element."""
+    sibling = element.prev
+    while sibling is not None and not sibling.is_element_node:
+        sibling = sibling.prev
+    return sibling
+
+
+def parent_element(element: Element) -> Element | None:
+    parent = element.parent
+    if parent is None or parent.is_document_node:
+        return None
+    return parent
+
+
+def copy_children(source: Element, target: Element) -> None:
+    """Append a copy of every child of ``source`` to ``target``."""
+    for child in list(source.iter(include_text=True)):
+        target.insert_child(child)
