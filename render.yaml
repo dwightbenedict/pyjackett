@@ -1,0 +1,49 @@
+# Render blueprint for the free web tier (512 MB RAM, ~0.1 CPU, no disk).
+# See "Small hosts" in README.md for what each setting is for.
+services:
+  - type: web
+    name: pyjackett
+    runtime: python
+    plan: free
+    # --warm-cache parses the definitions at build time, so waking the
+    # service does not spend a minute of its tiny CPU on YAML.
+    buildCommand: pip install . && python -m pyjackett --warm-cache
+    startCommand: python -m pyjackett --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.7
+      # The disk is wiped on every restart, so fix the credentials here.
+      - key: PYJACKETT_API_KEY
+        sync: false
+      - key: PYJACKETT_ADMIN_USERNAME
+        sync: false
+      - key: PYJACKETT_ADMIN_PASSWORD
+        sync: false
+      # Encrypts indexer secrets; keep it stable across restarts.
+      - key: PYJACKETT_KEY
+        generateValue: true
+      # At most this many tracker searches run at once, across all requests.
+      - key: PYJACKETT_MAX_CONCURRENCY
+        value: "6"
+      # Upper bound on cached releases (about 2 KB each).
+      - key: PYJACKETT_CACHE_MAX_RELEASES
+        value: "5000"
+      # Where --warm-cache wrote the parsed definitions (the project dir).
+      - key: PYJACKETT_DEFINITION_CACHE
+        value: definitions.cache
+      # Skip the daily upstream sync (it downloads and parses everything);
+      # a redeploy brings the bundled definitions up to date instead.
+      - key: PYJACKETT_SYNC_DEFINITIONS
+        value: "0"
+      # A failing tracker is left out of searches while it backs off, and is
+      # retried once instead of twice, so it does not hold a search slot.
+      - key: PYJACKETT_SKIP_FAILING
+        value: "1"
+      - key: PYJACKETT_RETRIES
+        value: "1"
+      - key: MALLOC_ARENA_MAX
+        value: "2"
+      - key: PYTHONDONTWRITEBYTECODE
+        value: "1"
+      - key: PYTHONUNBUFFERED
+        value: "1"

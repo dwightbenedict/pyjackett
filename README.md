@@ -1,103 +1,79 @@
 # PyJackett
 
-A Python port of [Jackett](https://github.com/Jackett/Jackett): a Torznab /
-TorrentPotato proxy that gives Sonarr, Radarr, Lidarr, Readarr and friends a
-single API over many torrent trackers.
+A Python port of [Jackett](https://github.com/Jackett/Jackett): a Torznab and
+TorrentPotato proxy that gives Sonarr, Radarr, Lidarr, Readarr and similar apps
+one API over many torrent trackers.
 
-* **585 trackers out of the box** – every Cardigann YAML definition shipped by
-  Jackett is bundled and executed by a Python port of its engine.
-* **Same API** – `/api/v2.0/indexers/{id}/results/torznab`, `/potato`, the
-  `all` aggregate indexer, `tag:`/`type:`/`lang:` filter indexers, `/dl`,
-  `/bh` (blackhole) and `/img` proxies.
-* **A new dashboard** – single page, responsive, light/dark theme, no external
-  assets.
+It bundles Jackett's 585 Cardigann definitions, runs them with a Python port of
+the engine, and adds 17 native indexers. Jackett's API paths work unchanged, so
+existing clients only need a new base URL.
 
 ## Quick start
 
+Requires Python 3.11 or newer.
+
 ```bash
-pip install -e .            # Python 3.11+
-python -m pyjackett         # http://127.0.0.1:9117
+pip install -e .
+python -m pyjackett        # http://127.0.0.1:9117
 ```
 
-Options: `--data-dir`, `--port`, `--host`, `--debug`. Configuration lives in
-`%APPDATA%\PyJackett` (Windows), `~/Library/Application Support/PyJackett`
-(macOS) or `~/.config/pyjackett`; override with `PYJACKETT_DATA`.
-Extra definitions can be dropped in `<data dir>/Definitions/*.yml`.
-`ServerConfig.json` uses the same keys as Jackett's.
+Sign in to the dashboard (default `admin` / `admin`; change it), then point
+your app at `http://<host>:9117/api/v2.0/indexers/<id>/results/torznab/` with
+the API key shown there. Use `all` as the id to search every configured
+indexer.
 
-Add an indexer from the dashboard, then point your *arr app at
-`http://host:9117/api/v2.0/indexers/<id>/results/torznab/` with the API key
-shown in the header.
+A fresh install configures 13 major public indexers. Set
+`PYJACKETT_INDEXERS=all` to configure every public one.
 
-## Project layout
+The API is documented at `/api/v1/docs`.
 
-Modules are grouped by responsibility; each function and class does one thing.
+## Configuration
 
+Settings live in `ServerConfig.json` (the same keys as Jackett's) in the data
+directory: `PYJACKETT_DATA`, or a per-user default. Extra definitions go in
+`<data directory>/Definitions/*.yml`.
+
+| Variable | Purpose |
+| --- | --- |
+| `PYJACKETT_API_KEY`, `PYJACKETT_ADMIN_USERNAME`, `PYJACKETT_ADMIN_PASSWORD` | Fix the API key and dashboard login instead of generating them. |
+| `PYJACKETT_KEY` | Passphrase that encrypts stored indexer secrets. |
+| `PYJACKETT_INDEXERS` | Public indexers to configure at startup: unset for the default list, `all`, or comma-separated ids. |
+| `PYJACKETT_MAX_CONCURRENCY` | Most indexer searches running at once, across all requests. |
+| `PYJACKETT_SKIP_FAILING` | `1` leaves failing indexers out of `all` searches until their back-off ends. |
+| `PYJACKETT_SYNC_DEFINITIONS` | `0` disables the daily definition update. |
+| `PYJACKETT_DEFINITION_CACHE` | Parsed-definition cache file. Build it ahead of time with `python -m pyjackett --warm-cache`. |
+
+## Deployment
+
+```bash
+docker build -t pyjackett .
+docker run -p 9117:9117 -v pyjackett-data:/data \
+  -e PYJACKETT_API_KEY=<key> \
+  -e PYJACKETT_ADMIN_USERNAME=<user> \
+  -e PYJACKETT_ADMIN_PASSWORD=<password> \
+  pyjackett
 ```
-src/pyjackett/
-  core/        domain model: categories, capabilities, query, release
-  utils/       stateless helpers: numbers, dates, cookies, urls, bencode, regex
-  config/      server/indexer configuration, form items, encryption, stores
-  http/        web client: request building, response parsing, session,
-               certificate pinning, FlareSolverr
-  cardigann/   the YAML engine: definition schema + loader, template language,
-               filters, HTML/JSON selectors, login, search, download
-  indexers/    base classes, health, retry, requester, manager,
-               meta/ (aggregate + filters), native/ (Python indexers)
-  services/    results cache, log cache, security, proxied links
-  server/      FastAPI app: routes/, Torznab XML, query parsing, auth
-  web/         the dashboard (HTML, CSS, ES modules)
-  definitions/ the bundled Cardigann YAML files
-```
+
+On Render, use the Docker runtime (or `render.yaml`). The free tier wipes its
+disk on every restart, so set the three variables above; it sleeps when idle;
+and it cannot run FlareSolverr, so Cloudflare-protected indexers will not work.
 
 ## Development
 
 ```bash
 pip install -e ".[dev]"
-pytest                                  # unit + end-to-end tests (fake tracker)
-ruff format src tests && ruff check src tests
-pycodestyle src tests                   # PEP 8 (config in setup.cfg)
+python -m pytest
 ```
 
-Code style: PEP 8, 79 columns, enforced by `ruff` and `pycodestyle`.
-(`E203`/`W503` are ignored because PEP 8 itself formats slices and binary
-operators that way.)
+Code style and design rules are in `CLAUDE.md`.
 
-The dashboard JavaScript follows the same rules (79 columns, one
-responsibility per function, related functions grouped in a module):
+## Not ported
 
-```bash
-npm install
-npm run format   # Prettier (config: .prettierrc.json)
-npm run lint     # Prettier --check + ESLint (config: eslint.config.js)
-```
-
-ESLint enforces the 79-column limit, `===`, `const`/no `var`, braces, a
-cyclomatic-complexity warning at 10 and a function-length warning at 50 lines
-(Prettier puts each argument on its own line, so JS runs taller than Python).
-
-## What is and is not ported
-
-Ported: the Cardigann engine (templates, filters, HTML/XML/JSON parsing,
-login methods `post`/`form`/`cookie`/`get`/`oneurl`, captchas, `before`,
-`selectors` and `infohash` download rules), Torznab caps/search/RSS output,
-TorrentPotato, manual search, results cache, per-indexer encrypted
-configuration, proxy (HTTP/SOCKS5), FlareSolverr, OMDb IMDb fallback, blackhole,
-admin password, log cleansing.
-
-Not ported (yet):
-
-* **Native C# indexers** – Jackett has ~80 hand-written trackers (RuTracker,
-  AnimeBytes, Gazelle/Avistaz families, ...). The extension point exists
-  (`indexers/native`, see `torrents_csv.py` for a worked example) and
-  `torrentscsv` is ported; the rest are not. Most popular trackers are also
-  available as YAML definitions.
-* Self-update service, Windows service/tray, SOCKS4 proxies.
-* Cardigann is executed on HTML parsed by *html5lib* (like Jackett's AngleSharp,
-  it follows the HTML5 parsing rules) which is slower than lxml but matches the
-  selectors the definitions were written for.
+The self-updater, the Windows service and tray icon, SOCKS4 proxies, and the
+native C# indexers beyond the 17 included (most of those trackers are available
+as YAML definitions).
 
 ## License
 
-GPL-2.0, like the project it is derived from. The bundled definitions come
-from the Jackett repository.
+GPL-2.0, like the project it derives from. The bundled definitions come from
+the Jackett repository.

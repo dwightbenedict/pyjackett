@@ -96,6 +96,40 @@ Before finishing any refactor or feature, tests, `ruff check` and
 - Replace `if/elif` chains on a kind with a strategy table or an `@register`
   decorator (see Cardigann login methods and `cardigann/filters.py`).
 
+## Web UI style
+
+- The web UI (`src/pyjackett/web`) strictly follows Apple's Human Interface
+  Guidelines. Every control, layout, icon, colour, animation and piece of
+  copy must look and behave as it does in Apple's own apps; when unsure, do
+  what iOS/macOS does. Never invent a custom look or use another design
+  system (Material, Bootstrap, etc.).
+- Icons are SF Symbols (e.g. `arrow.clockwise` for refresh). Reproduce them
+  exactly rather than approximating them.
+- Type is the system font stack (`-apple-system`, `BlinkMacSystemFont`,
+  `SF Pro`); colours are Apple system colours; corners are rounded; light and
+  dark themes follow `prefers-color-scheme`.
+- Activity indicators are the Apple spoke spinner (12 spokes fading around a
+  circle, stepped rotation), never a ring.
+- Busy buttons keep their label and show the spinner; do not rewrite labels
+  to "-ing" forms such as "Searching…".
+- Follow Apple's writing style: short Title Case labels for buttons and
+  tabs, no trailing ellipses or filler.
+- Before finishing any web UI change, ask yourself "Is this how Apple does
+  it?" Name the Apple app and pattern you matched (e.g. Photos select mode)
+  and check placement, control style, colour, motion and copy against it.
+  Fix deviations before reporting the work done, without being asked.
+- Target the latest iOS, iPadOS and macOS (currently version 26, Liquid
+  Glass) and follow each platform at its own screen size, not one layout
+  for all: phones (under 700px) use floating glass capsule toolbars at the
+  bottom; iPad and Mac widths (700px and up) put actions in the top
+  toolbar. Use the shared `.glass` material and tokens in `app.css`
+  (`--glass`, `--glass-rim`, `--glass-shadow`) instead of new surface
+  styles, and switch layouts with `matchMedia`, redrawing when the
+  breakpoint is crossed.
+- Select mode follows Mail: "N Selected" title, Select All (becomes
+  Deselect All) and Done in the top bar, leading selection circle on each
+  row, selected rows tinted, destructive actions in red.
+
 ## Tests
 
 - Fake the network with `httpx.MockTransport`; build apps through

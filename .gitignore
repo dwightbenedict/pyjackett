@@ -6,3 +6,5 @@ __pycache__/
 *.egg-info/
 dist/
 node_modules/
+definitions.cache
+DefinitionCache.bin
