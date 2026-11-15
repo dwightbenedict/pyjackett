@@ -8,7 +8,7 @@
 # Set the three variables above on any public host: without them a fresh
 # install uses a generated API key and the login admin / admin. See "Small
 # hosts" in README.md for every PYJACKETT_* setting.
-FROM python:3.12-slim
+FROM python:3.15-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
